@@ -102,7 +102,7 @@ export default function EventPage() {
       try {
         const res = await fetch(`/api/mockdb`);
         const allData = await res.json();
-        const data = allData?.events?.[id];
+        const data = allData?.events?.[id as string];
         if (!data) {
           router.push("/");
           return;
@@ -189,7 +189,7 @@ export default function EventPage() {
     try {
       const res = await fetch(`/api/mockdb`);
       const allData = await res.json();
-      const data = allData?.events?.[id];
+      const data = allData?.events?.[id as string];
       if (data) {
         setEvent(data);
         setTractatesData(data.tractates || {});

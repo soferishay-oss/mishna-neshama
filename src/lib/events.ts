@@ -1,4 +1,4 @@
-import { ref, set, get, child, serverTimestamp } from "firebase/database";
+import { ref, set, get, child, serverTimestamp, update } from "firebase/database";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage, isMockMode } from "./firebase";
 import { HDate } from "@hebcal/core";

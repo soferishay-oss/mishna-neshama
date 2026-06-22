@@ -472,14 +472,14 @@ export default function EventPage() {
   };
 
   const handleExportParticipants = () => {
-    if (!event?.tractates) {
+    if (!tractatesData || Object.keys(tractatesData).length === 0) {
       alert("אין עדיין משתתפים באירוע");
       return;
     }
     
     const dataToExport: any[] = [];
-    Object.keys(event.tractates).forEach(tractateName => {
-      const chaps = event.tractates[tractateName]?.chapters || {};
+    Object.keys(tractatesData).forEach(tractateName => {
+      const chaps = tractatesData[tractateName]?.chapters || {};
       Object.keys(chaps).forEach(ch => {
         const c = chaps[ch];
         if (c.takerName) {
@@ -499,7 +499,7 @@ export default function EventPage() {
       alert("אין עדיין משתתפים באירוע");
       return;
     }
-    downloadCSV(dataToExport, `participants_${event.deceasedName}.csv`);
+    downloadCSV(dataToExport, `participants_${event?.deceasedName || 'event'}.csv`);
   };
 
   const handleGeneratePoster = async (withNames: boolean = true) => {

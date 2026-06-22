@@ -342,7 +342,7 @@ export default function EventPage() {
     
     const chaptersObj = tractatesData[tractateName]?.chapters || {};
     const updates: any = {};
-    const deletePromises = [];
+    const deletePromises: any[] = [];
     
     Object.keys(chaptersObj).forEach(ch => {
         const c = chaptersObj[ch];

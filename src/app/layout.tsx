@@ -7,7 +7,6 @@ const heebo = Heebo({ subsets: ["hebrew", "latin"] });
 export const metadata: Metadata = {
   title: "משנה-נשמה | לימוד משניות שיתופי",
   description: "מערכת דיגיטלית לניהול שיתופי של לימוד משניות לעילוי נשמת",
-  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {

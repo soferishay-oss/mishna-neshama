@@ -21,7 +21,6 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-qr-code": "^2.2.0",
-    "react-quill": "^2.0.0",
     "react-quill-new": "^3.8.3",
     "react-to-print": "^3.3.0"
   },

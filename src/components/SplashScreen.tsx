@@ -9,18 +9,18 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
 
   // משנה -> מ ש נ ה
   const mishnaOrder = [
-    { id: "m", char: "מ" },
-    { id: "sh", char: "ש" },
-    { id: "n", char: "נ" },
-    { id: "h", char: "ה" },
+    { id: "m", char: "מ", gradient: "from-blue-700 to-blue-500" },
+    { id: "sh", char: "ש", gradient: "from-amber-500 to-amber-400" },
+    { id: "n", char: "נ", gradient: "from-blue-700 to-blue-500" },
+    { id: "h", char: "ה", gradient: "from-amber-500 to-amber-400" },
   ];
 
   // נשמה -> נ ש מ ה
   const neshamaOrder = [
-    { id: "n", char: "נ" },
-    { id: "sh", char: "ש" },
-    { id: "m", char: "מ" },
-    { id: "h", char: "ה" },
+    { id: "n", char: "נ", gradient: "from-blue-700 to-blue-500" },
+    { id: "sh", char: "ש", gradient: "from-amber-500 to-amber-400" },
+    { id: "m", char: "מ", gradient: "from-blue-700 to-blue-500" },
+    { id: "h", char: "ה", gradient: "from-amber-500 to-amber-400" },
   ];
 
   const currentOrder = phase === "mishna" || phase === "emerge" ? mishnaOrder : neshamaOrder;
@@ -74,7 +74,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: -200, opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
-              className="flex flex-row text-6xl md:text-8xl font-black text-blue-700 tracking-wider mb-8 z-10 drop-shadow-sm pb-4"
+              className="flex flex-row text-6xl md:text-8xl font-black tracking-wider mb-8 z-10 drop-shadow-sm pb-4"
               dir="rtl"
             >
               {currentOrder.map((letter) => (
@@ -82,7 +82,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
                   key={letter.id}
                   layout
                   transition={{ type: "spring", stiffness: 60, damping: 14 }}
-                  className="inline-block"
+                  className={`inline-block bg-gradient-to-b ${letter.gradient} bg-clip-text text-transparent px-1`}
                 >
                   {letter.char}
                 </motion.span>

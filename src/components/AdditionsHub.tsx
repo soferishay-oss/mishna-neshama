@@ -59,10 +59,12 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
   const processText = (text: string | undefined | null) => {
     if (!text) return "הטקסט ימולא על ידי מנהל המערכת";
     const name = eventData?.deceasedName || "פלוני בן פלוני";
+    
+    // Replace non-breaking spaces (which ReactQuill sometimes adds) with regular spaces FIRST so regex matches properly
+    let processed = text.replace(/&nbsp;/g, ' ').replace(/\u00A0/g, ' ');
+    
     // מחליף את שני הניסוחים הנפוצים
-    let processed = text.replace(/פלוני בן פלוני/g, name).replace(/פלונית בת פלונית/g, name);
-    // Replace non-breaking spaces (which ReactQuill sometimes adds) with regular spaces so words wrap normally
-    processed = processed.replace(/&nbsp;/g, ' ').replace(/\u00A0/g, ' ');
+    processed = processed.replace(/פלוני בן פלוני/g, name).replace(/פלונית בת פלונית/g, name);
     return processed;
   };
 

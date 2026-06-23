@@ -3,8 +3,6 @@ import { Settings, Printer, Download, X, ListTree, FileText, ChevronRight, Chevr
 import QRCode from 'react-qr-code';
 import { DEFAULT_SYSTEM_TEXTS } from '@/lib/defaultTexts';
 
-import * as htmlToImage from 'html-to-image';
-import { jsPDF } from 'jspdf';
 
 export default function AdditionsHub({ eventData, systemTexts }: { eventData: any, systemTexts: any }) {
   const [activeTab, setActiveTab] = useState<'texts' | 'notice'>('texts');
@@ -45,41 +43,8 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
     showBarcode: true
   });
 
-  const handlePrint = async () => {
-    const element = document.getElementById("notice-poster");
-    if (!element) return;
-    try {
-      // Create a clean image using html-to-image which supports modern CSS (like lab colors) better than html2canvas
-      const imgData = await htmlToImage.toJpeg(element, { quality: 1.0, pixelRatio: 2 });
-      const isLandscape = noticeData.orientation === 'landscape';
-      
-      const pdf = new jsPDF({
-        orientation: isLandscape ? 'landscape' : 'portrait',
-        unit: 'mm',
-        format: 'a4'
-      });
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgProps = pdf.getImageProperties(imgData);
-      
-      let drawWidth = pdfWidth;
-      let drawHeight = (imgProps.height * drawWidth) / imgProps.width;
-      
-      if (drawHeight > pdfHeight) {
-        drawHeight = pdfHeight;
-        drawWidth = (imgProps.width * drawHeight) / imgProps.height;
-      }
-      
-      const x = (pdfWidth - drawWidth) / 2;
-      const y = (pdfHeight - drawHeight) / 2;
-      
-      pdf.addImage(imgData, 'JPEG', x, y, drawWidth, drawHeight);
-      pdf.save('מודעת_אבל.pdf');
-    } catch (e) {
-      console.error("PDF generation failed, falling back to print", e);
-      window.print();
-    }
+  const handlePrint = () => {
+    window.print();
   };
 
   const processText = (text: string | undefined | null) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Settings, Printer, Download, X, ListTree, FileText, ChevronRight, ChevronDown } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { DEFAULT_SYSTEM_TEXTS } from '@/lib/defaultTexts';
@@ -11,6 +11,15 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
   const isFemale = eventData?.deceasedGender === 'female';
   const [activeEdah, setActiveEdah] = useState<string | null>(null);
   const [activePrayerId, setActivePrayerId] = useState<string | null>(null);
+  const prayerRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
+
+  useEffect(() => {
+    if (activePrayerId && prayerRefs.current[activePrayerId]) {
+      setTimeout(() => {
+        prayerRefs.current[activePrayerId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [activePrayerId]);
 
   const allPrayers = systemTexts?.customPrayers || DEFAULT_SYSTEM_TEXTS.customPrayers || [];
   const availablePrayers = allPrayers.filter((p: any) => 
@@ -119,7 +128,7 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
 
                 <div className="flex flex-col rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
                   {availablePrayers.map((p: any, idx: number) => (
-                    <div key={p.id}>
+                    <div key={p.id} ref={(el) => { prayerRefs.current[p.id] = el; }}>
                       <button 
                         onClick={() => setActivePrayerId(activePrayerId === p.id ? null : p.id)} 
                         className={`w-full text-right px-6 py-4 transition flex justify-between items-center ${idx % 2 === 0 ? 'bg-white' : 'bg-blue-50/50'} hover:bg-blue-100 ${activePrayerId === p.id ? 'bg-blue-100 border-r-4 border-blue-600' : 'border-r-4 border-transparent'}`}

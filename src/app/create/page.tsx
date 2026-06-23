@@ -43,6 +43,7 @@ function CreateEvent() {
     organizerEmail: "",
     whatsappGroup: "",
     showGregorian: false,
+    photoUrl: "",
   });
 
   const [deceasedTitleOption, setDeceasedTitleOption] = useState('ז"ל');
@@ -92,7 +93,8 @@ function CreateEvent() {
             organizerPhone: ev.organizerPhone || "",
             organizerEmail: ev.organizerEmail || "",
             whatsappGroup: ev.whatsappGroup || "",
-            showGregorian: ev.showGregorian !== false
+            showGregorian: ev.showGregorian !== false,
+            photoUrl: ev.photoUrl || ""
           });
           if (ev.deceasedTitle) {
             if (['ז"ל', 'זצ"ל', 'ע"ה', ''].includes(ev.deceasedTitle)) {
@@ -102,10 +104,16 @@ function CreateEvent() {
               setCustomDeceasedTitle(ev.deceasedTitle);
             }
           }
-          if (ev.passingDateStr && ev.burialDateStr) {
-            setDateMode('gregorian');
-            setGregPassingDate(ev.passingDateStr);
-            setGregBurialDate(ev.burialDateStr);
+          if (ev.passingDate && ev.burialDate) {
+            setDateMode('hebrew');
+            setGregPassingDate(ev.passingDate);
+            setGregBurialDate(ev.burialDate);
+            
+            // Extract safely using T12:00:00Z to avoid timezone day shifts
+            const passHDate = new HDate(new Date(ev.passingDate + "T12:00:00Z"));
+            const burHDate = new HDate(new Date(ev.burialDate + "T12:00:00Z"));
+            setHebPassingDate({ day: passHDate.getDate(), month: passHDate.getMonthName(), year: passHDate.getFullYear() });
+            setHebBurialDate({ day: burHDate.getDate(), month: burHDate.getMonthName(), year: burHDate.getFullYear() });
           }
         }
       };
@@ -130,11 +138,33 @@ function CreateEvent() {
         burialDateStr = gregBurialDate;
       }
 
+      let shloshimDateHebrew = "";
+      let yahrzeitDateHebrew = "";
+      let shloshimDateStr = "";
+      let yahrzeitDateStr = "";
+
+      if (passingDateStr && burialDateStr) {
+        const pDate = new Date(passingDateStr + "T12:00:00Z");
+        const bDate = new Date(burialDateStr + "T12:00:00Z");
+        const passHDate = new HDate(pDate);
+        const burHDate = new HDate(bDate);
+        const shloshimHDate = burHDate.add(29, 'd'); 
+        const yahrzeitHDate = passHDate.add(1, 'y');
+        shloshimDateHebrew = shloshimHDate.renderGematriya(true);
+        yahrzeitDateHebrew = yahrzeitHDate.renderGematriya(true);
+        shloshimDateStr = shloshimHDate.greg().toISOString();
+        yahrzeitDateStr = yahrzeitHDate.greg().toISOString();
+      }
+
       const payload = {
         ...formData,
         deceasedTitle: deceasedTitleOption === 'אחר' ? customDeceasedTitle : (deceasedTitleOption === 'ללא תוספת' ? '' : deceasedTitleOption),
         passingDate: passingDateStr,
         burialDate: burialDateStr,
+        shloshimDateStr,
+        yahrzeitDateStr,
+        shloshimDateHebrew,
+        yahrzeitDateHebrew,
       };
 
       if (isEditMode && editId) {
@@ -195,7 +225,7 @@ function CreateEvent() {
             onChange={(e) => onChange({ ...value, day: parseInt(e.target.value) })}
           >
             {HEBREW_DAYS.map(d => (
-              <option key={d} value={d}>{gematriya(d)}'</option>
+              <option key={d} value={d}>{gematriya(d)}</option>
             ))}
           </select>
           <select 
@@ -238,6 +268,33 @@ function CreateEvent() {
               פרטי הנפטר
             </h2>
             
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1">תמונת הנפטר <span className="text-slate-400 font-normal">(רשות)</span></label>
+              
+              <div className="flex items-center gap-4 mb-2">
+                {(selectedImage || formData.photoUrl) && (
+                   <img 
+                      src={selectedImage ? URL.createObjectURL(selectedImage) : formData.photoUrl} 
+                      alt="Preview" 
+                      className="w-16 h-16 rounded-full object-cover border border-slate-200 shadow-sm" 
+                   />
+                )}
+                <div className="flex-1">
+                   <button 
+                     type="button" 
+                     onClick={handleImageClick}
+                     className="w-full border-2 border-dashed border-slate-300 rounded-xl p-3 text-center hover:bg-slate-50 transition flex flex-col items-center justify-center gap-2"
+                   >
+                     <Camera className="w-5 h-5 text-slate-400" />
+                     <span className="text-sm text-slate-600 font-medium">
+                        {selectedImage ? selectedImage.name : formData.photoUrl ? "החלף תמונה" : "לחץ לבחירת תמונה (אופציונלי)"}
+                     </span>
+                   </button>
+                   <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
+                </div>
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">שם הנפטר (המלא)</label>
               <input 

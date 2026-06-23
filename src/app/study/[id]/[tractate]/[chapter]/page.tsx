@@ -26,8 +26,21 @@ export default function StudyPage() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [eventData, setEventData] = useState<any>(null);
-  const [textSize, setTextSize] = useState(1.5);
+  const [textSize, setTextSizeState] = useState(1.2);
   const [bookmarkedIndex, setBookmarkedIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const savedSize = localStorage.getItem('preferredTextSize');
+    if (savedSize) setTextSizeState(parseFloat(savedSize));
+  }, []);
+
+  const setTextSize = (updater: number | ((prev: number) => number)) => {
+    setTextSizeState(prev => {
+      const newSize = typeof updater === 'function' ? updater(prev) : updater;
+      localStorage.setItem('preferredTextSize', newSize.toString());
+      return newSize;
+    });
+  };
 
   // Print selection
   const [showPrintModal, setShowPrintModal] = useState(false);
@@ -171,16 +184,19 @@ export default function StudyPage() {
 
   return (
     <div className="min-h-screen bg-[#FDFBF7] print:bg-white flex flex-col font-serif">
-      <header className="bg-white shadow-sm p-4 flex items-center justify-between sticky top-0 z-10 border-b border-amber-100 print:hidden">
-        <Link href={`/event/${id}`} className="p-2 -ml-2 text-slate-500 hover:text-slate-800 transition">
-          <ChevronRight className="w-6 h-6" />
-        </Link>
-        <div className="flex flex-col justify-center items-center absolute left-1/2 -translate-x-1/2">
-          <h1 className="text-xl font-bold text-amber-900">מסכת {decodedTractate}</h1>
-          <h2 className="text-sm font-medium text-amber-700">פרק {getHebrewChapter(chapterIndex)}</h2>
+      <header className="bg-white shadow-sm p-4 flex flex-col md:flex-row items-center justify-between sticky top-0 z-10 border-b border-amber-100 print:hidden gap-4 md:gap-0">
+        <div className="flex w-full md:w-auto items-center justify-between">
+          <Link href={`/event/${id}`} className="p-2 -ml-2 text-slate-500 hover:text-slate-800 transition">
+            <ChevronRight className="w-6 h-6" />
+          </Link>
+          <div className="flex flex-col justify-center items-center md:absolute md:left-1/2 md:-translate-x-1/2">
+            <h1 className="text-xl font-bold text-amber-900">מסכת {decodedTractate}</h1>
+            <h2 className="text-sm font-medium text-amber-700">פרק {getHebrewChapter(chapterIndex)}</h2>
+          </div>
+          <div className="w-10 md:hidden"></div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap justify-center items-center gap-2 max-w-full">
           <div className="flex bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
             <button onClick={() => setTextSize(prev => Math.max(1, prev - 0.2))} className="px-2 py-1 text-slate-600 hover:bg-slate-200 font-bold" title="הקטן טקסט">A-</button>
             <div className="w-[1px] bg-slate-200"></div>
@@ -265,27 +281,27 @@ export default function StudyPage() {
                const comments = Array.isArray(commentsRaw) ? commentsRaw : commentsRaw ? [commentsRaw] : [];
 
                return (
-                 <div key={index} id={`mishnah-${index}`} className={`flex gap-4 p-4 rounded-2xl transition-colors \${bookmarkedIndex === index ? 'bg-amber-50 border border-amber-200' : 'hover:bg-slate-50'}`}>
-                   <div className="flex flex-col items-center gap-3 w-10 shrink-0 mt-1">
-                     <div className="text-amber-500 font-bold text-xl select-none text-center print:text-black">
+                 <div key={index} id={`mishnah-${index}`} className={`flex flex-col p-4 md:p-6 rounded-3xl transition-colors ${bookmarkedIndex === index ? 'bg-amber-50 border border-amber-200' : 'hover:bg-slate-50 border border-transparent'}`}>
+                   <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-3">
+                     <div className="text-amber-500 font-black text-2xl select-none print:text-black bg-amber-50 w-10 h-10 flex items-center justify-center rounded-full">
                        {mishnaLetter}
                      </div>
                      <button 
                        onClick={() => handleBookmark(index)}
-                       className={`rounded-xl transition-colors ${bookmarkedIndex === index ? 'bg-amber-100 border-2 border-amber-500 text-amber-700 py-1 flex flex-col items-center justify-center min-w-[60px]' : 'p-2 text-slate-300 hover:text-amber-400 hover:bg-amber-50 flex items-center justify-center'} print:hidden shadow-sm`}
+                       className={`rounded-xl transition-all ${bookmarkedIndex === index ? 'bg-amber-100 border-2 border-amber-500 text-amber-700 px-4 py-1.5 flex items-center gap-2 font-bold shadow-sm' : 'p-2.5 text-slate-400 hover:text-amber-500 bg-slate-50 hover:bg-amber-50 flex items-center gap-1 rounded-full border border-slate-100'} print:hidden`}
                        title="שמור מיקום"
                      >
                        {bookmarkedIndex === index ? (
                          <>
-                           <span className="text-[10px] font-black leading-tight mb-1">עד כאן<br/>למדת</span>
-                           <ChevronDown className="w-5 h-5 fill-amber-500 text-amber-600" />
+                           <span className="text-sm">עד כאן למדת</span>
+                           <ChevronDown className="w-4 h-4 fill-amber-500 text-amber-600" />
                          </>
                        ) : (
                          <Bookmark className="w-5 h-5" />
                        )}
                      </button>
                    </div>
-                   <div className="flex-1">
+                   <div className="flex-1 w-full">
                      <div className="leading-[2.2] text-slate-800 text-justify transition-all duration-300" style={{ fontSize: `${textSize}rem` }}>
                        {cleanText}
                      </div>

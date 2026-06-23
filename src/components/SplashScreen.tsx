@@ -63,7 +63,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.8 }}
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-sky-500 to-blue-700 overflow-hidden"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#FDFBF7] overflow-hidden"
     >
       <div className="relative flex flex-col items-center justify-center h-full w-full">
         <AnimatePresence>
@@ -74,7 +74,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: -200, opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
-              className="flex flex-row text-6xl md:text-8xl font-bold text-white tracking-wider mb-8 z-10 drop-shadow-md"
+              className="flex flex-row text-6xl md:text-8xl font-black bg-gradient-to-l from-blue-700 via-blue-500 to-amber-500 bg-clip-text text-transparent tracking-wider mb-8 z-10 drop-shadow-sm pb-4"
               dir="rtl"
             >
               {currentOrder.map((letter) => (
@@ -101,7 +101,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
               transition={{ duration: 1 }}
               className="absolute mt-32 z-0"
             >
-              <BookOpen className="w-24 h-24 text-blue-300 opacity-60" strokeWidth={1.5} />
+              <BookOpen className="w-24 h-24 text-blue-200 opacity-60" strokeWidth={1.5} />
             </motion.div>
           )}
         </AnimatePresence>

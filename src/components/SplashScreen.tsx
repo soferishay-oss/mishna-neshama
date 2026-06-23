@@ -74,7 +74,7 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: -200, opacity: 0, scale: 0.9 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
-              className="flex flex-row text-6xl md:text-8xl font-black bg-gradient-to-l from-blue-700 via-blue-500 to-amber-500 bg-clip-text text-transparent tracking-wider mb-8 z-10 drop-shadow-sm pb-4"
+              className="flex flex-row text-6xl md:text-8xl font-black text-blue-700 tracking-wider mb-8 z-10 drop-shadow-sm pb-4"
               dir="rtl"
             >
               {currentOrder.map((letter) => (

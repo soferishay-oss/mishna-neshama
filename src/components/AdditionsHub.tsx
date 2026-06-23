@@ -1,19 +1,25 @@
 import React, { useState } from 'react';
-import { Settings, Printer, Download, X, ListTree, FileText } from 'lucide-react';
+import { Settings, Printer, Download, X, ListTree, FileText, ChevronRight, ChevronDown } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { DEFAULT_SYSTEM_TEXTS } from '@/lib/defaultTexts';
+
+import * as htmlToImage from 'html-to-image';
+import { jsPDF } from 'jspdf';
 
 export default function AdditionsHub({ eventData, systemTexts }: { eventData: any, systemTexts: any }) {
   const [activeTab, setActiveTab] = useState<'texts' | 'notice'>('texts');
   
   // Texts State
   const isFemale = eventData?.deceasedGender === 'female';
-  const [activeEdah, setActiveEdah] = useState<"mizrach" | "ashkenaz" | "teiman" | null>(null);
+  const [activeEdah, setActiveEdah] = useState<string | null>(null);
   const [activePrayerId, setActivePrayerId] = useState<string | null>(null);
 
-  const availablePrayers = (systemTexts?.customPrayers || DEFAULT_SYSTEM_TEXTS.customPrayers || []).filter((p: any) => 
+  const allPrayers = systemTexts?.customPrayers || DEFAULT_SYSTEM_TEXTS.customPrayers || [];
+  const availablePrayers = allPrayers.filter((p: any) => 
     p.edah === activeEdah && (p.gender === 'both' || p.gender === (isFemale ? 'female' : 'male'))
-  );
+  ).sort((a: any, b: any) => a.title.localeCompare(b.title, 'he'));
+
+  const uniqueEdot = Array.from(new Set(allPrayers.map((p: any) => p.edah))) as string[];
 
   // Notice State
   const [noticeData, setNoticeData] = useState({
@@ -39,96 +45,140 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
     showBarcode: true
   });
 
-  const handlePrint = () => {
-    window.print();
+  const handlePrint = async () => {
+    const element = document.getElementById("notice-poster");
+    if (!element) return;
+    try {
+      // Create a clean image using html-to-image which supports modern CSS (like lab colors) better than html2canvas
+      const imgData = await htmlToImage.toJpeg(element, { quality: 1.0, pixelRatio: 2 });
+      const isLandscape = noticeData.orientation === 'landscape';
+      
+      const pdf = new jsPDF({
+        orientation: isLandscape ? 'landscape' : 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgProps = pdf.getImageProperties(imgData);
+      
+      let drawWidth = pdfWidth;
+      let drawHeight = (imgProps.height * drawWidth) / imgProps.width;
+      
+      if (drawHeight > pdfHeight) {
+        drawHeight = pdfHeight;
+        drawWidth = (imgProps.width * drawHeight) / imgProps.height;
+      }
+      
+      const x = (pdfWidth - drawWidth) / 2;
+      const y = (pdfHeight - drawHeight) / 2;
+      
+      pdf.addImage(imgData, 'JPEG', x, y, drawWidth, drawHeight);
+      pdf.save('מודעת_אבל.pdf');
+    } catch (e) {
+      console.error("PDF generation failed, falling back to print", e);
+      window.print();
+    }
   };
 
   const processText = (text: string | undefined | null) => {
     if (!text) return "הטקסט ימולא על ידי מנהל המערכת";
     const name = eventData?.deceasedName || "פלוני בן פלוני";
     // מחליף את שני הניסוחים הנפוצים
-    return text.replace(/פלוני בן פלוני/g, name).replace(/פלונית בת פלונית/g, name);
+    let processed = text.replace(/פלוני בן פלוני/g, name).replace(/פלונית בת פלונית/g, name);
+    // Replace non-breaking spaces (which ReactQuill sometimes adds) with regular spaces so words wrap normally
+    processed = processed.replace(/&nbsp;/g, ' ').replace(/\u00A0/g, ' ');
+    return processed;
   };
 
-  const EDOT_LABELS = {
+  const EDOT_LABELS: Record<string, string> = {
     mizrach: "עדות המזרח",
     ashkenaz: "אשכנז",
     teiman: "תימן (בלדי)"
   };
+  const getEdahLabel = (id: string) => EDOT_LABELS[id] || id;
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden print:border-none print:shadow-none print:rounded-none flex flex-col h-full">
-      {/* Top Navigation */}
-      <div className="flex border-b print:hidden bg-slate-50">
-        <button 
-          onClick={() => setActiveTab('texts')} 
-          className={`flex-1 py-4 font-bold transition-colors ${activeTab === 'texts' ? 'bg-white border-b-2 border-blue-600 text-blue-700' : 'text-slate-500 hover:text-slate-800'}`}
-        >
-          <div className="flex items-center justify-center gap-2">
-            <ListTree className="w-5 h-5" />
-            טקסטים ותפילות
-          </div>
-        </button>
-        <button 
-          onClick={() => setActiveTab('notice')} 
-          className={`flex-1 py-4 font-bold transition-colors ${activeTab === 'notice' ? 'bg-white border-b-2 border-amber-600 text-amber-700' : 'text-slate-500 hover:text-slate-800'}`}
-        >
-          <div className="flex items-center justify-center gap-2">
-            <FileText className="w-5 h-5" />
-            מחולל מודעת אבל
-          </div>
-        </button>
-      </div>
-
-      <div className="p-4 md:p-6 overflow-y-auto flex-1">
-        
-        {/* Texts Tab */}
-        {activeTab === 'texts' && (
-          <div className="space-y-6">
-            {!activeEdah ? (
-              <div className="space-y-4">
-                <h3 className="text-xl font-bold text-center text-slate-800 mb-6">בחר נוסח תפילה</h3>
-                {(["mizrach", "ashkenaz", "teiman"] as const).map(edah => (
-                  <button 
-                    key={edah}
-                    onClick={() => setActiveEdah(edah)}
-                    className="w-full bg-white border-2 border-slate-100 hover:border-blue-400 p-5 rounded-2xl text-lg font-bold text-slate-700 hover:bg-blue-50 transition shadow-sm active:scale-[0.98]"
-                  >
-                    {EDOT_LABELS[edah]}
-                  </button>
-                ))}
+      {activeTab !== null && (
+        <>
+          {/* Top Navigation */}
+          <div className="flex border-b print:hidden bg-slate-50 relative">
+            <button 
+              onClick={() => setActiveTab('texts')} 
+              className={`flex-1 py-4 font-bold transition-colors ${activeTab === 'texts' ? 'bg-white border-b-2 border-blue-600 text-blue-700' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <ListTree className="w-5 h-5" />
+                תפילות
               </div>
-            ) : (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
-                <div className="flex items-center justify-between border-b pb-4">
-                  <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                    <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">נוסח {EDOT_LABELS[activeEdah]}</span>
-                  </h3>
-                  <button onClick={() => setActiveEdah(null)} className="text-slate-400 hover:text-slate-700 font-medium text-sm border px-3 py-1.5 rounded-lg">חזור לבחירת עדה</button>
-                </div>
+            </button>
+            <button 
+              onClick={() => setActiveTab('notice')} 
+              className={`flex-1 py-4 font-bold transition-colors ${activeTab === 'notice' ? 'bg-white border-b-2 border-amber-600 text-amber-700' : 'text-slate-500 hover:text-slate-800'}`}
+            >
+              <div className="flex items-center justify-center gap-2">
+                <FileText className="w-5 h-5" />
+                עיצוב מודעת אבל
+              </div>
+            </button>
+          </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {availablePrayers.map((p: any) => (
-                    <button 
-                      key={p.id}
-                      onClick={() => setActivePrayerId(p.id)} 
-                      className={`px-4 py-2 rounded-xl text-sm font-bold transition ${activePrayerId === p.id ? 'bg-blue-600 text-white shadow-md' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm'}`}
-                    >
-                      {p.title}
-                    </button>
+          <div className="p-4 md:p-6 overflow-y-auto flex-1">
+            
+            {/* Texts Tab */}
+            {activeTab === 'texts' && (
+              <div className="space-y-6">
+                {!activeEdah ? (
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-bold text-center text-slate-800 mb-6">בחר נוסח תפילה</h3>
+                    {uniqueEdot.map(edah => (
+                      <button 
+                        key={edah}
+                        onClick={() => setActiveEdah(edah)}
+                        className="w-full bg-white border-2 border-slate-100 hover:border-blue-400 p-5 rounded-2xl text-lg font-bold text-slate-700 hover:bg-blue-50 transition shadow-sm active:scale-[0.98]"
+                      >
+                        {getEdahLabel(edah)}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                    <div className="flex items-center justify-between border-b pb-4">
+                      <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">נוסח {getEdahLabel(activeEdah)}</span>
+                      </h3>
+                      <button onClick={() => setActiveEdah(null)} className="text-slate-400 hover:text-slate-700 font-medium text-sm border px-3 py-1.5 rounded-lg bg-white shadow-sm">חזור לבחירת נוסח</button>
+                    </div>
+
+                <div className="flex flex-col rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+                  {availablePrayers.map((p: any, idx: number) => (
+                    <div key={p.id}>
+                      <button 
+                        onClick={() => setActivePrayerId(activePrayerId === p.id ? null : p.id)} 
+                        className={`w-full text-right px-6 py-4 transition flex justify-between items-center ${idx % 2 === 0 ? 'bg-white' : 'bg-blue-50/50'} hover:bg-blue-100 ${activePrayerId === p.id ? 'bg-blue-100 border-r-4 border-blue-600' : 'border-r-4 border-transparent'}`}
+                      >
+                        <span className={`text-lg ${activePrayerId === p.id ? 'font-black text-blue-800' : 'font-bold text-slate-700'}`}>{p.title}</span>
+                        {activePrayerId === p.id ? (
+                          <ChevronDown className="w-5 h-5 text-blue-600" />
+                        ) : (
+                          <ChevronRight className="w-5 h-5 text-slate-400" />
+                        )}
+                      </button>
+                      
+                      {activePrayerId === p.id && (
+                        <div className="bg-amber-50/40 p-6 md:p-8 border-b border-slate-200 shadow-inner">
+                          <div 
+                            className="font-serif text-xl md:text-2xl leading-[2.2] text-slate-800 text-right [&>p]:mb-4 [&>ul]:list-disc [&>ol]:list-decimal [&>ul]:mr-8 [&>ol]:mr-8 overflow-hidden"
+                            dangerouslySetInnerHTML={{ __html: processText(p.content) }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   ))}
                   {availablePrayers.length === 0 && (
-                     <div className="text-slate-500 text-sm">לא נמצאו טקסטים מותאמים אישית לעדה זו. (מנהל המערכת יכול להוסיף)</div>
-                  )}
-                </div>
-
-                <div className="bg-amber-50/30 p-6 rounded-2xl border border-amber-100/50 shadow-inner min-h-[400px]">
-                  {activePrayerId && availablePrayers.some((p: any) => p.id === activePrayerId) ? (
-                    <div className="whitespace-pre-wrap font-serif text-xl leading-loose text-slate-800 text-center font-bold">
-                      {processText(availablePrayers.find((p: any) => p.id === activePrayerId)?.content)}
-                    </div>
-                  ) : (
-                    <div className="text-slate-400 text-center mt-10">בחר קטע טקסט מהרשימה למעלה</div>
+                     <div className="text-slate-500 text-sm p-6 text-center">לא נמצאו טקסטים מותאמים אישית לעדה זו. (מנהל המערכת יכול להוסיף)</div>
                   )}
                 </div>
               </div>
@@ -352,7 +402,9 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
             </div>
           </div>
         )}
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

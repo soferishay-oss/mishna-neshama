@@ -8,6 +8,18 @@ import { Lock, Settings, BarChart3, Save, CheckCircle2, LogOut, FileText, Extern
 import Link from "next/link";
 import { TRACTATE_CHAPTERS } from "@/lib/tractates";
 import { downloadCSV } from "@/lib/exportUtils";
+import dynamic from "next/dynamic";
+import "react-quill-new/dist/quill.snow.css";
+
+const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
+
+const QUILL_MODULES = {
+  toolbar: [
+    ['bold', 'italic', 'underline'],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+    ['clean']
+  ]
+};
 
 export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -19,7 +31,9 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   
   // Edah tab state for the editor
-  const [activeEdah, setActiveEdah] = useState<"mizrach" | "ashkenaz" | "teiman">("mizrach");
+  const allPrayers = systemTexts?.customPrayers || DEFAULT_SYSTEM_TEXTS.customPrayers || [];
+  const uniqueEdot = Array.from(new Set(allPrayers.map((p: any) => p.edah))) as string[];
+  const [activeEdah, setActiveEdah] = useState<string>(uniqueEdot[0] || "mizrach");
 
   useEffect(() => {
     // Check if authenticated from homepage prompt
@@ -50,9 +64,10 @@ export default function AdminPage() {
       }
       
       // Find the corresponding default prayer and overwrite its content
+      const htmlContent = (content.includes('<p>') || content.includes('<br>')) ? content : content.replace(/\n/g, '<br/>');
       const existing = newPrayers.find((p: any) => p.edah === edah && p.title.includes(titleKey));
       if (existing) {
-        existing.content = content;
+        existing.content = htmlContent;
       } else {
         // If not found in defaults, add it
         newPrayers.push({
@@ -60,7 +75,7 @@ export default function AdminPage() {
           edah,
           title: titleKey,
           gender: 'both',
-          content
+          content: htmlContent
         });
       }
     };
@@ -269,10 +284,32 @@ export default function AdminPage() {
   if (!isAuthenticated) return null; // handled by redirect
   if (loading) return <div className="min-h-screen flex items-center justify-center font-bold">טוען נתונים...</div>;
 
-  const EDOT_LABELS = {
+  const EDOT_LABELS: Record<string, string> = {
     mizrach: "עדות המזרח",
     ashkenaz: "אשכנז",
     teiman: "תימן (בלדי)"
+  };
+  const getEdahLabel = (id: string) => EDOT_LABELS[id] || id;
+
+  const handleExportPrayersWord = () => {
+    // Generate simple HTML format that Word understands
+    const prayersHtml = allPrayers.filter((p: any) => p.edah === activeEdah).map((p: any) => `
+      <div style="font-family: Arial, sans-serif; text-align: right; direction: rtl; margin-bottom: 30px;">
+        <h2 style="color: #1e3a8a;">${p.title}</h2>
+        <p style="font-size: 14pt; line-height: 1.8;">${p.content}</p>
+      </div>
+    `).join("<hr/>");
+    
+    const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset='utf-8'><title>Export</title></head><body>${prayersHtml}</body></html>`;
+      
+    const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `תפילות_נוסח_${getEdahLabel(activeEdah)}.doc`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -408,21 +445,56 @@ export default function AdminPage() {
 
         {/* Texts Editor with Tabs */}
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-slate-400" />
-            עריכת טקסטים ועזרים לאבלים
-          </h2>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <BarChart3 className="w-6 h-6 text-slate-400" />
+              עריכת טקסטים ועזרים לאבלים
+            </h2>
+            <button 
+              onClick={handleExportPrayersWord}
+              className="bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition"
+            >
+              <Download className="w-4 h-4" /> ייצוא תפילות {getEdahLabel(activeEdah)} לוורד
+            </button>
+          </div>
           
-          <div className="flex border-b mb-6">
-            {(["mizrach", "ashkenaz", "teiman"] as const).map(edah => (
+          <div className="flex flex-wrap border-b mb-6 gap-2">
+            {uniqueEdot.map((edah) => (
               <button 
                 key={edah}
-                className={`py-3 px-6 font-bold transition-colors ${activeEdah === edah ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+                className={`py-3 px-6 font-bold transition-colors \${activeEdah === edah ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
                 onClick={() => setActiveEdah(edah)}
               >
-                נוסח {EDOT_LABELS[edah]}
+                נוסח {getEdahLabel(edah)}
               </button>
             ))}
+            <button 
+              className="py-3 px-4 text-sm text-blue-600 font-bold hover:bg-blue-50 transition rounded-t-lg flex items-center gap-1 mr-auto"
+              onClick={() => {
+                const newEdah = prompt("הכנס שם נוסח חדש:");
+                if (newEdah) {
+                  setActiveEdah(newEdah);
+                  const newPrayer = { id: Date.now().toString(), edah: newEdah, title: "כותרת חדשה", content: "תוכן...", gender: "both" };
+                  setSystemTexts((prev: any) => ({ ...prev, customPrayers: [...(prev.customPrayers || []), newPrayer] }));
+                }
+              }}
+            >
+              <PlusCircle className="w-4 h-4"/> נוסח חדש
+            </button>
+            {uniqueEdot.length > 1 && (
+              <button 
+                className="py-3 px-4 text-sm text-red-600 font-bold hover:bg-red-50 transition rounded-t-lg flex items-center gap-1"
+                onClick={() => {
+                  if (confirm(`האם אתה בטוח שברצונך למחוק לחלוטין את נוסח ${getEdahLabel(activeEdah)} על כל תפילותיו?`)) {
+                    const newPrayers = (systemTexts.customPrayers || []).filter((p: any) => p.edah !== activeEdah);
+                    setSystemTexts((prev: any) => ({ ...prev, customPrayers: newPrayers }));
+                    setActiveEdah(uniqueEdot.find(e => e !== activeEdah) || "mizrach");
+                  }
+                }}
+              >
+                <Trash2 className="w-4 h-4"/> מחק נוסח זה
+              </button>
+            )}
           </div>
           
           <div className="space-y-6">
@@ -460,12 +532,16 @@ export default function AdminPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-slate-600 mb-1">תוכן הטקסט (השתמש ב- 'פלוני בן פלוני' או 'פלונית בת פלונית' והם יוחלפו אוטומטית בשם הנפטר/ת)</label>
-                  <textarea 
-                    className="w-full border border-slate-200 rounded-xl p-4 min-h-[150px] font-serif text-lg leading-loose" 
-                    value={prayer.content} 
-                    onChange={e => handleUpdatePrayer(prayer.id, 'content', e.target.value)} 
-                    dir="rtl"
-                  />
+                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white" dir="rtl">
+                    <style>{`.ql-editor { text-align: right !important; direction: rtl !important; font-family: inherit; font-size: 1.125rem; }`}</style>
+                    <ReactQuill 
+                      theme="snow"
+                      value={prayer.content || ""}
+                      onChange={(content) => handleUpdatePrayer(prayer.id, 'content', content)}
+                      modules={QUILL_MODULES}
+                      className="font-serif text-right"
+                    />
+                  </div>
                 </div>
               </div>
             ))}
@@ -474,7 +550,7 @@ export default function AdminPage() {
               onClick={handleAddPrayer} 
               className="w-full py-4 border-2 border-dashed border-blue-300 rounded-2xl text-blue-600 font-bold hover:bg-blue-50 hover:border-blue-400 transition flex justify-center items-center gap-2"
             >
-              <PlusCircle className="w-5 h-5" /> הוסף קטע טקסט חדש לנוסח {EDOT_LABELS[activeEdah]}
+              <PlusCircle className="w-5 h-5" /> הוסף קטע טקסט חדש לנוסח {getEdahLabel(activeEdah)}
             </button>
           </div>
         </section>

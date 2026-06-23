@@ -58,7 +58,13 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
   if (phase === "done") return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-sky-500 to-blue-700 overflow-hidden">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.8 }}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gradient-to-b from-sky-500 to-blue-700 overflow-hidden"
+    >
       <div className="relative flex flex-col items-center justify-center h-full w-full">
         <AnimatePresence>
           {phase !== "fly" && (
@@ -100,6 +106,6 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
           )}
         </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 }

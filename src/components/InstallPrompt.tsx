@@ -45,7 +45,7 @@ export default function InstallPrompt() {
   if (!showPrompt) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 z-50 flex items-center justify-between gap-4 animate-in slide-in-from-bottom-5">
+    <div className="fixed bottom-4 left-4 right-4 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 z-50 flex items-center justify-between gap-4 animate-in slide-in-from-bottom-5 print:hidden">
       <div className="flex flex-col">
         <h3 className="font-bold text-slate-800 text-sm md:text-base">התקן את משנה-נשמה</h3>
         <p className="text-xs md:text-sm text-slate-500">הוסף למסך הבית לגישה מהירה ונוחה</p>

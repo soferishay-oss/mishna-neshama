@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ref, onValue, update, remove, get } from "firebase/database";
 import { db, isMockMode } from "@/lib/firebase";
+import { HDate } from "@hebcal/core";
 import { EventData } from "@/lib/events";
 import { useAuth } from "@/hooks/useAuth";
 import { Calendar, Users, Share2, MessageCircle, BookOpen, CheckCircle2, Trash2, Undo2, X, Link as LinkIcon, Mail, Copy, ListTree, PlayCircle, Info, Settings, Menu, Home, PlusCircle, Settings2, Briefcase, ChevronDown, Download, ImageIcon, Trophy, Flame } from "lucide-react";
@@ -426,6 +427,11 @@ export default function EventPage() {
     safeCopy(text, "ההודעה והקישור הועתקו ללוח!");
   };
 
+  const copyAppShare = () => {
+    const text = `עזור בהפצת האפליקציה לזיכוי הרבים:\n${window.location.origin}`;
+    safeCopy(text, "הודעת השיתוף הועתקה ללוח!");
+  };
+
   const getMessageText = (template: string, participantName: string, tractatesList: string) => {
     const url = window.location.href;
     const title = event?.deceasedTitle ? ` ${event.deceasedTitle}` : ' ז"ל';
@@ -699,7 +705,7 @@ export default function EventPage() {
     });
   });
 
-  const myLearningRows: Array<{ tractate: string, nextChapterToLearn: number | null, completedCount: number, totalOwned: number }> = [];
+  const myLearningRows: Array<{ tractate: string, nextChapterToLearn: number | null, nextMishnahLabel: string, completedCount: number, totalOwned: number }> = [];
   
   if (participantProfile?.name) {
     Object.keys(tractatesData).forEach(t => {
@@ -720,9 +726,16 @@ export default function EventPage() {
       if (ownedChapters.length > 0) {
         ownedChapters.sort((a, b) => a - b);
         let nextChapterToLearn = null;
+        let nextMishnahLabel = "";
         for (const ch of ownedChapters) {
           if (!chapters[ch].isCompleted) {
             nextChapterToLearn = ch;
+            const bookmarkKey = `bookmark_${id}_${t}_${ch}`;
+            const savedIndexStr = typeof window !== 'undefined' ? localStorage.getItem(bookmarkKey) : null;
+            if (savedIndexStr !== null) {
+              const savedIndex = parseInt(savedIndexStr, 10);
+              nextMishnahLabel = ` משנה ${getHebrewChapter(savedIndex + 1)}`;
+            }
             break;
           }
         }
@@ -730,6 +743,7 @@ export default function EventPage() {
         myLearningRows.push({
           tractate: t,
           nextChapterToLearn,
+          nextMishnahLabel,
           completedCount,
           totalOwned: ownedChapters.length
         });
@@ -1025,14 +1039,7 @@ export default function EventPage() {
           </button>
         </div>
         
-        <div className="absolute top-4 left-4 z-50 flex flex-col gap-2">
-          <button onClick={() => handleSetView('learning')} className="bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-all shadow-md active:scale-95" title="הלימוד שלי">
-            <BookOpen className="w-6 h-6" />
-          </button>
-          <button onClick={() => handleSetView('additions')} className="bg-white/20 hover:bg-white/30 text-white p-3 rounded-full transition-all shadow-md active:scale-95" title="עזרים למנחמים">
-            <Briefcase className="w-6 h-6" />
-          </button>
-        </div>
+
       </header>
 
       {/* Participant Info Bar */}
@@ -1152,7 +1159,7 @@ export default function EventPage() {
                   <BookOpen className="w-5 h-5" /> הלימוד שלי
                 </button>
                 <button onClick={() => handleSetView('additions')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeView === 'additions' ? 'bg-blue-100 text-blue-700' : 'text-slate-700 hover:bg-slate-50'}`}>
-                  <Briefcase className="w-5 h-5" /> עזרים למנחמים
+                  <Briefcase className="w-5 h-5" /> עזרים לאבלים ולמנחמים
                 </button>
                 <button onClick={() => router.push('/create')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-slate-700 hover:bg-slate-50 transition">
                   <PlusCircle className="w-5 h-5" /> יצירת אירוע חדש
@@ -1305,7 +1312,7 @@ export default function EventPage() {
                     ? `נותרו עוד ${daysRemaining} ימים ללימוד!` 
                     : daysRemaining === 0 
                       ? "היום יום השלושים!" 
-                      : "תאריך השלושים עבר"}
+                      : `תאריך פטירה: ${event?.passingDate ? new HDate(new Date(event.passingDate)).renderGematriya(true) : "עבר"}`}
                 </div>
               </div>
             )}
@@ -1325,12 +1332,12 @@ export default function EventPage() {
                           <div>
                             <div className="font-bold text-slate-800 text-lg">מסכת {row.tractate}</div>
                             <div className={`text-sm mt-1 font-medium ${isAllDone ? 'text-green-600' : 'text-amber-700'}`}>
-                              {isAllDone ? `סיימת את כל ${row.totalOwned} הפרקים שלקחת!` : `הבא בתור: פרק ${getHebrewChapter(row.nextChapterToLearn!)}`}
+                              {isAllDone ? `סיימת את כל ${row.totalOwned} הפרקים שלקחת!` : `הבא בתור: פרק ${getHebrewChapter(row.nextChapterToLearn!)}${row.nextMishnahLabel}`}
                             </div>
                           </div>
-                          <div className="flex items-center gap-3">
+                          <div className="flex flex-col items-center justify-center gap-2">
                             {!isAllDone && (
-                              <button onClick={() => handleReleaseTractateComplete(row.tractate)} className="text-slate-500 bg-slate-100 border border-slate-200 px-4 py-3 rounded-xl font-bold hover:bg-slate-200 transition shadow-sm">ביטול התחייבות</button>
+                              <button onClick={() => handleReleaseTractateComplete(row.tractate)} className="text-xs text-slate-400 hover:text-slate-600 underline font-medium transition px-2">ביטול התחייבות</button>
                             )}
                             {!isAllDone ? (
                               <Link href={`/study/${id}/${encodeURIComponent(row.tractate)}/${row.nextChapterToLearn}`} className="bg-amber-600 text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-amber-700 transition flex items-center gap-2 shadow-md active:scale-95"><PlayCircle className="w-5 h-5" /> למד כעת</Link>
@@ -1414,6 +1421,10 @@ export default function EventPage() {
               <button onClick={copyTextAndLink} className="flex items-center justify-center gap-2 bg-slate-100 text-slate-700 py-3 rounded-xl font-medium hover:bg-slate-200 transition-colors">
                 <Copy className="w-5 h-5" />
                 העתקת הודעת הזמנה + קישור
+              </button>
+              <button onClick={copyAppShare} className="flex items-center justify-center gap-2 bg-emerald-50 text-emerald-700 py-3 rounded-xl font-medium hover:bg-emerald-100 transition-colors border border-emerald-200 mt-2">
+                <Share2 className="w-5 h-5" />
+                שיתוף האפליקציה לזיכוי הרבים
               </button>
               <div className="text-center mt-2 text-sm text-slate-500 font-medium">קוד אירוע להזנה ידנית: {id}</div>
             </div>

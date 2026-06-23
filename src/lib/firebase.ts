@@ -17,8 +17,15 @@ export const isMockMode = firebaseConfig.apiKey === "dummy";
 
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
+let authInstance: any = null;
+try {
+  authInstance = getAuth(app);
+} catch (e) {
+  console.warn("Firebase Auth not configured or failed to initialize:", e);
+}
+
 export const db = getDatabase(app);
-export const auth = getAuth(app);
+export const auth = authInstance;
 export const storage = getStorage(app);
 
 export default app;

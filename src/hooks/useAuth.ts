@@ -14,6 +14,11 @@ export function useAuth() {
       setLoading(false);
       return;
     }
+    if (!auth) {
+      setUser({ uid: "local-dev-user" } as User);
+      setLoading(false);
+      return;
+    }
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
@@ -22,7 +27,8 @@ export function useAuth() {
       } else {
         // Automatically sign in anonymously if not logged in
         signInAnonymously(auth).catch((error) => {
-          console.error("Error signing in anonymously", error);
+          console.warn("Firebase Auth not configured in console (auth/configuration-not-found). Using local dummy user.");
+          setUser({ uid: "local-dummy-user" } as User);
           setLoading(false);
         });
       }

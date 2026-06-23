@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ChevronRight, Loader2, BookOpen, MessageSquareText } from "lucide-react";
+import { ChevronRight, Loader2, BookOpen, MessageSquareText, Bookmark, Type, Printer, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { SEFARIA_NAMES, getHebrewChapter } from "@/lib/tractates";
 import { isMockMode, db } from "@/lib/firebase";
-import { ref, update } from "firebase/database";
+import { ref, update, get } from "firebase/database";
 
 export default function StudyPage() {
   const { id, tractate, chapter } = useParams();
@@ -25,6 +25,59 @@ export default function StudyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [eventData, setEventData] = useState<any>(null);
+  const [textSize, setTextSize] = useState(1.5);
+  const [bookmarkedIndex, setBookmarkedIndex] = useState<number | null>(null);
+
+  // Print selection
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [printRange, setPrintRange] = useState<[number, number] | null>(null);
+  const [printStartIdx, setPrintStartIdx] = useState(0);
+  const [printEndIdx, setPrintEndIdx] = useState(0);
+
+  useEffect(() => {
+    const fetchEventData = async () => {
+      try {
+        if (isMockMode) {
+          const res = await fetch(`/api/mockdb`);
+          const allData = await res.json();
+          setEventData(allData?.events?.[id as string] || null);
+        } else {
+          const snap = await get(ref(db, `events/${id}`));
+          if (snap.exists()) setEventData(snap.val());
+        }
+      } catch (e) {
+         console.error(e);
+      }
+    };
+    fetchEventData();
+  }, [id]);
+
+  useEffect(() => {
+    const bm = localStorage.getItem(`bookmark_${id}_${decodedTractate}_${chapterIndex}`);
+    if (bm) setBookmarkedIndex(parseInt(bm, 10));
+  }, [id, decodedTractate, chapterIndex]);
+  
+  useEffect(() => {
+     if (!loading && bookmarkedIndex !== null) {
+        setTimeout(() => {
+          const el = document.getElementById(`mishnah-${bookmarkedIndex}`);
+          if (el) {
+             el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        }, 500);
+     }
+  }, [loading]);
+
+  const handleBookmark = (index: number) => {
+    if (bookmarkedIndex === index) {
+      localStorage.removeItem(`bookmark_${id}_${decodedTractate}_${chapterIndex}`);
+      setBookmarkedIndex(null);
+    } else {
+      localStorage.setItem(`bookmark_${id}_${decodedTractate}_${chapterIndex}`, index.toString());
+      setBookmarkedIndex(index);
+    }
+  };
 
   useEffect(() => {
     const fetchText = async () => {
@@ -117,17 +170,33 @@ export default function StudyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDFBF7] flex flex-col font-serif">
-      <header className="bg-white shadow-sm p-4 flex items-center justify-between sticky top-0 z-10 border-b border-amber-100">
+    <div className="min-h-screen bg-[#FDFBF7] print:bg-white flex flex-col font-serif">
+      <header className="bg-white shadow-sm p-4 flex items-center justify-between sticky top-0 z-10 border-b border-amber-100 print:hidden">
         <Link href={`/event/${id}`} className="p-2 -ml-2 text-slate-500 hover:text-slate-800 transition">
           <ChevronRight className="w-6 h-6" />
         </Link>
-        <div className="flex flex-col justify-center items-center">
+        <div className="flex flex-col justify-center items-center absolute left-1/2 -translate-x-1/2">
           <h1 className="text-xl font-bold text-amber-900">מסכת {decodedTractate}</h1>
           <h2 className="text-sm font-medium text-amber-700">פרק {getHebrewChapter(chapterIndex)}</h2>
         </div>
         
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          <div className="flex bg-slate-100 rounded-lg overflow-hidden border border-slate-200">
+            <button onClick={() => setTextSize(prev => Math.max(1, prev - 0.2))} className="px-2 py-1 text-slate-600 hover:bg-slate-200 font-bold" title="הקטן טקסט">A-</button>
+            <div className="w-[1px] bg-slate-200"></div>
+            <button onClick={() => setTextSize(prev => Math.min(3, prev + 0.2))} className="px-2 py-1 text-slate-600 hover:bg-slate-200 font-bold" title="הגדל טקסט">A+</button>
+          </div>
+          <button 
+            onClick={() => {
+              setPrintStartIdx(0);
+              setPrintEndIdx(textLines.length - 1 > 0 ? textLines.length - 1 : 0);
+              setShowPrintModal(true);
+            }} 
+            className="px-3 py-1.5 rounded-lg font-bold text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 transition flex items-center gap-1 print:hidden"
+            title="הדפס ללימוד בשבת"
+          >
+            <Printer className="w-4 h-4" /> הדפס
+          </button>
           {bartenuraLines.length > 0 && (
             <button 
               onClick={() => setActiveCommentary(activeCommentary === 'bartenura' ? 'none' : 'bartenura')}
@@ -158,19 +227,36 @@ export default function StudyPage() {
         </div>
       </header>
 
-      <main className="flex-1 p-6 max-w-3xl mx-auto w-full pb-32">
+      <main className="flex-1 p-6 max-w-3xl mx-auto w-full pb-32 print:p-0 print:pb-0">
+        {/* Print Header */}
+        <div className="hidden print:block text-center mb-8 border-b-2 border-slate-800 pb-4 mt-8">
+          <h1 className="text-3xl font-bold">לימוד מסכת {decodedTractate} - פרק {getHebrewChapter(chapterIndex)}</h1>
+          {eventData && <h2 className="text-xl mt-2">לעילוי נשמת {eventData.deceasedName} {eventData.deceasedTitle || ''}</h2>}
+        </div>
+
         {loading ? (
-          <div className="flex flex-col items-center justify-center h-64 text-amber-800/60 gap-4">
+          <div className="flex flex-col items-center justify-center h-64 text-amber-800/60 gap-4 print:hidden">
             <Loader2 className="w-10 h-10 animate-spin" />
             <p className="font-medium text-lg">שואב את מילות המשנה...</p>
           </div>
         ) : error ? (
-          <div className="bg-red-50 text-red-700 p-6 rounded-2xl text-center border border-red-100">
+          <div className="bg-red-50 text-red-700 p-6 rounded-2xl text-center border border-red-100 print:hidden">
             {error}
           </div>
         ) : (
-          <div className="space-y-12">
+          <div className="border-4 border-blue-100 bg-white rounded-3xl p-6 md:p-10 relative mt-4 shadow-sm print:border-none print:shadow-none print:p-0 print:mt-0">
+            {eventData && (
+               <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-100 text-blue-800 px-6 py-1.5 rounded-full text-sm font-bold shadow-sm whitespace-nowrap print:hidden">
+                 לעילוי נשמת {eventData.deceasedName} {eventData.deceasedTitle || ''}
+               </div>
+            )}
+            <div className="space-y-12 mt-4">
             {textLines.map((line, index) => {
+               // Print Range Filter
+               if (printRange !== null && (index < printRange[0] || index > printRange[1])) {
+                 return <div key={index} className="print:hidden"></div>;
+               }
+
                // Remove HTML tags for basic text
                const cleanText = line.replace(/<\/?[^>]+(>|$)/g, "");
                const mishnaLetter = getHebrewChapter(index);
@@ -179,12 +265,28 @@ export default function StudyPage() {
                const comments = Array.isArray(commentsRaw) ? commentsRaw : commentsRaw ? [commentsRaw] : [];
 
                return (
-                 <div key={index} className="flex gap-4">
-                   <div className="text-amber-500 font-bold text-xl pt-1 select-none w-8 shrink-0 text-right">
-                     {mishnaLetter}
+                 <div key={index} id={`mishnah-${index}`} className={`flex gap-4 p-4 rounded-2xl transition-colors \${bookmarkedIndex === index ? 'bg-amber-50 border border-amber-200' : 'hover:bg-slate-50'}`}>
+                   <div className="flex flex-col items-center gap-3 w-10 shrink-0 mt-1">
+                     <div className="text-amber-500 font-bold text-xl select-none text-center print:text-black">
+                       {mishnaLetter}
+                     </div>
+                     <button 
+                       onClick={() => handleBookmark(index)}
+                       className={`rounded-xl transition-colors ${bookmarkedIndex === index ? 'bg-amber-100 border-2 border-amber-500 text-amber-700 py-1 flex flex-col items-center justify-center min-w-[60px]' : 'p-2 text-slate-300 hover:text-amber-400 hover:bg-amber-50 flex items-center justify-center'} print:hidden shadow-sm`}
+                       title="שמור מיקום"
+                     >
+                       {bookmarkedIndex === index ? (
+                         <>
+                           <span className="text-[10px] font-black leading-tight mb-1">עד כאן<br/>למדת</span>
+                           <ChevronDown className="w-5 h-5 fill-amber-500 text-amber-600" />
+                         </>
+                       ) : (
+                         <Bookmark className="w-5 h-5" />
+                       )}
+                     </button>
                    </div>
                    <div className="flex-1">
-                     <div className="text-2xl leading-[2.2] text-slate-800 text-justify">
+                     <div className="leading-[2.2] text-slate-800 text-justify transition-all duration-300" style={{ fontSize: `${textSize}rem` }}>
                        {cleanText}
                      </div>
                      
@@ -195,7 +297,7 @@ export default function StudyPage() {
                            {activeCommentary === 'bartenura' ? "רע\"ב:" : activeCommentary === 'rambam' ? "רמב\"ם:" : "תוספות יום טוב:"}
                          </div>
                          {comments.map((comment, cIdx) => (
-                           <div key={cIdx} className="text-lg leading-relaxed text-slate-700 text-justify" dangerouslySetInnerHTML={{ __html: comment }} />
+                           <div key={cIdx} className="leading-relaxed text-slate-700 text-justify transition-all duration-300" style={{ fontSize: `${textSize * 0.8}rem` }} dangerouslySetInnerHTML={{ __html: comment }} />
                          ))}
                        </div>
                      )}
@@ -204,11 +306,12 @@ export default function StudyPage() {
                );
             })}
           </div>
+          </div>
         )}
       </main>
 
       {!loading && !error && (
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7] to-transparent">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7] to-transparent print:hidden">
           <div className="max-w-2xl mx-auto flex justify-center">
             <button 
               onClick={handleFinish}
@@ -227,6 +330,45 @@ export default function StudyPage() {
                 </>
               )}
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Print Modal */}
+      {showPrintModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 print:hidden" onClick={() => setShowPrintModal(false)}>
+          <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <h3 className="text-2xl font-bold text-slate-800 mb-6 text-center">הגדרות הדפסה</h3>
+            <div className="space-y-4">
+              <button 
+                onClick={() => { setPrintRange(null); setShowPrintModal(false); setTimeout(() => window.print(), 300); }} 
+                className="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 py-4 rounded-2xl font-bold text-lg transition"
+              >
+                הדפס את כל הפרק
+              </button>
+              
+              <div className="border-t border-slate-200 pt-6 mt-4">
+                <h4 className="font-bold text-slate-700 mb-4 text-center">או הדפס משניות נבחרות:</h4>
+                <div className="flex items-center justify-center gap-3 mb-6">
+                   <div className="text-sm font-medium text-slate-500">ממשנה</div>
+                   <select className="border border-slate-200 bg-slate-50 p-2 rounded-lg font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-400" value={printStartIdx} onChange={e => setPrintStartIdx(Number(e.target.value))}>
+                     {textLines.map((_, i) => <option key={i} value={i}>{getHebrewChapter(i)}</option>)}
+                   </select>
+                   <div className="text-sm font-medium text-slate-500">עד</div>
+                   <select className="border border-slate-200 bg-slate-50 p-2 rounded-lg font-bold text-slate-700 outline-none focus:ring-2 focus:ring-amber-400" value={printEndIdx} onChange={e => setPrintEndIdx(Number(e.target.value))}>
+                     {textLines.map((_, i) => <option key={i} value={i}>{getHebrewChapter(i)}</option>)}
+                   </select>
+                </div>
+                <button 
+                  onClick={() => { setPrintRange([printStartIdx, printEndIdx]); setShowPrintModal(false); setTimeout(() => window.print(), 300); }} 
+                  className="w-full bg-amber-600 hover:bg-amber-700 text-white py-4 rounded-2xl font-bold text-lg transition shadow-md"
+                >
+                  הדפס משניות נבחרות
+                </button>
+              </div>
+              
+              <button onClick={() => setShowPrintModal(false)} className="w-full text-slate-500 py-3 mt-2 hover:bg-slate-50 rounded-xl transition font-medium">ביטול</button>
+            </div>
           </div>
         </div>
       )}

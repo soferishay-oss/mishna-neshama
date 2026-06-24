@@ -9,17 +9,17 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
 
   // משנה -> מ ש נ ה
   const mishnaOrder = [
-    { id: "m", char: "מ", gradient: "from-blue-700 to-blue-500" },
+    { id: "m", char: "מ", gradient: "from-blue-600 via-blue-400 to-cyan-400" },
     { id: "sh", char: "ש", gradient: "from-orange-600 via-red-500 to-yellow-500" },
-    { id: "n", char: "נ", gradient: "from-blue-700 to-blue-500" },
+    { id: "n", char: "נ", gradient: "from-blue-600 via-blue-400 to-cyan-400" },
     { id: "h", char: "ה", gradient: "from-orange-600 via-red-500 to-yellow-500" },
   ];
 
   // נשמה -> נ ש מ ה
   const neshamaOrder = [
-    { id: "n", char: "נ", gradient: "from-blue-700 to-blue-500" },
+    { id: "n", char: "נ", gradient: "from-blue-600 via-blue-400 to-cyan-400" },
     { id: "sh", char: "ש", gradient: "from-orange-600 via-red-500 to-yellow-500" },
-    { id: "m", char: "מ", gradient: "from-blue-700 to-blue-500" },
+    { id: "m", char: "מ", gradient: "from-blue-600 via-blue-400 to-cyan-400" },
     { id: "h", char: "ה", gradient: "from-orange-600 via-red-500 to-yellow-500" },
   ];
 
@@ -72,15 +72,17 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
               key="word"
               initial={{ y: 80, opacity: 0, scale: 0.5 }}
               animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: -200, opacity: 0, scale: 0.9 }}
+              exit={{ opacity: 1 }}
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="flex flex-row text-6xl md:text-8xl font-black tracking-wider mb-8 z-10 drop-shadow-sm pb-4"
               dir="rtl"
             >
-              {currentOrder.map((letter) => (
+              {currentOrder.map((letter, i) => (
                 <motion.span
                   key={letter.id}
                   layout
+                  initial={{ y: 0, opacity: 1 }}
+                  exit={{ y: -300, opacity: 0, transition: { duration: 0.6, ease: "easeIn", delay: i * 0.15 } }}
                   transition={{ type: "spring", stiffness: 60, damping: 14 }}
                   className={`inline-block bg-gradient-to-b ${letter.gradient} bg-clip-text text-transparent px-1`}
                 >

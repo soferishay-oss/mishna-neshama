@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { BookOpen, Users, PlusCircle, Trophy, Heart, ShieldCheck } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import SplashScreen from "@/components/SplashScreen";
 import { db, isMockMode } from "@/lib/firebase";
 import { ref, get } from "firebase/database";
@@ -16,6 +16,9 @@ function HomePageContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const [showOrganizerModal, setShowOrganizerModal] = useState(false);
+  const [organizerPhone, setOrganizerPhone] = useState("");
+  const [loginError, setLoginError] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -77,46 +80,10 @@ function HomePageContent() {
             </Link>
 
             <button 
-              onClick={async () => {
-                const pass = prompt("לכניסת מארגן אירוע, הקלד מספר טלפון:");
-                if (!pass) return;
-                try {
-                  let foundEventId = null;
-                  if (isMockMode) {
-                    const res = await fetch("/api/mockdb");
-                    const data = await res.json();
-                    const events = data.events || {};
-                    for (const [id, ev] of Object.entries(events) as any) {
-                      if (ev.organizerPhone && ev.organizerPhone.replace(/\D/g, '') === pass.replace(/\D/g, '')) {
-                        foundEventId = id; break;
-                      }
-                    }
-                  } else {
-                    const snap = await get(ref(db));
-                    if (snap.exists()) {
-                      const dbData = snap.val();
-                      const events = dbData.events || {};
-                      for (const [id, ev] of Object.entries(events) as any) {
-                        if (ev.organizerPhone && ev.organizerPhone.replace(/\D/g, '') === pass.replace(/\D/g, '')) {
-                          foundEventId = id; break;
-                        }
-                      }
-                    }
-                  }
-
-                  if (foundEventId) {
-                    const orgEvents = JSON.parse(localStorage.getItem("organizedEvents") || "[]");
-                    if (!orgEvents.includes(foundEventId)) {
-                      orgEvents.push(foundEventId);
-                      localStorage.setItem("organizedEvents", JSON.stringify(orgEvents));
-                    }
-                    router.push(`/event/${foundEventId}`);
-                  } else {
-                    alert("שגיאה: לא נמצאו אירועים עבור מספר טלפון זה.");
-                  }
-                } catch (e) {
-                  alert("שגיאה בהתחברות.");
-                }
+              onClick={() => {
+                setShowOrganizerModal(true);
+                setOrganizerPhone("");
+                setLoginError("");
               }}
               className="flex items-center justify-center w-full bg-slate-100 text-slate-700 py-4 px-6 rounded-2xl font-medium text-lg hover:bg-slate-200 border border-slate-200 transition-all shadow-sm active:scale-[0.98] mt-4"
             >
@@ -144,6 +111,94 @@ function HomePageContent() {
           </footer>
         </motion.main>
       )}
+
+      <AnimatePresence>
+        {showOrganizerModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl"
+              dir="rtl"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-xl font-bold text-slate-800">כניסת מארגן אירוע</h3>
+                <button onClick={() => setShowOrganizerModal(false)} className="text-slate-400 hover:text-slate-600 bg-slate-100 p-2 rounded-full transition-colors">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+              </div>
+              <p className="text-slate-500 mb-6 text-sm">הזן את מספר הטלפון איתו פתחת את האירוע.</p>
+              
+              <input 
+                type="tel"
+                value={organizerPhone}
+                onChange={(e) => { setOrganizerPhone(e.target.value); setLoginError(""); }}
+                placeholder="מספר טלפון"
+                className="w-full text-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 text-lg mb-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400 font-medium tracking-wider"
+                autoFocus
+              />
+              
+              <div className="min-h-[24px] mb-4 text-center">
+                 {loginError && <p className="text-red-500 text-sm font-medium">{loginError}</p>}
+              </div>
+              
+              <button 
+                onClick={async () => {
+                  if (!organizerPhone) return;
+                  try {
+                    let foundEventId = null;
+                    if (isMockMode) {
+                      const res = await fetch("/api/mockdb");
+                      const data = await res.json();
+                      const events = data.events || {};
+                      for (const [id, ev] of Object.entries(events) as any) {
+                        if (ev.organizerPhone && ev.organizerPhone.replace(/\D/g, '') === organizerPhone.replace(/\D/g, '')) {
+                          foundEventId = id; break;
+                        }
+                      }
+                    } else {
+                      const snap = await get(ref(db));
+                      if (snap.exists()) {
+                        const dbData = snap.val();
+                        const events = dbData.events || {};
+                        for (const [id, ev] of Object.entries(events) as any) {
+                          if (ev.organizerPhone && ev.organizerPhone.replace(/\D/g, '') === organizerPhone.replace(/\D/g, '')) {
+                            foundEventId = id; break;
+                          }
+                        }
+                      }
+                    }
+
+                    if (foundEventId) {
+                      const orgEvents = JSON.parse(localStorage.getItem("organizedEvents") || "[]");
+                      if (!orgEvents.includes(foundEventId)) {
+                        orgEvents.push(foundEventId);
+                        localStorage.setItem("organizedEvents", JSON.stringify(orgEvents));
+                      }
+                      setShowOrganizerModal(false);
+                      router.push(`/event/${foundEventId}`);
+                    } else {
+                      setLoginError("לא נמצאו אירועים עבור מספר זה.");
+                    }
+                  } catch (e) {
+                    setLoginError("שגיאה בהתחברות.");
+                  }
+                }}
+                className="w-full flex items-center justify-center bg-blue-600 text-white font-bold py-4 rounded-xl text-lg hover:bg-blue-700 transition-all active:scale-[0.98] shadow-md"
+              >
+                כניסה
+                <ShieldCheck className="mr-2 w-5 h-5" />
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

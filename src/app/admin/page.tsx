@@ -34,6 +34,7 @@ export default function AdminPage() {
   const allPrayers = systemTexts?.customPrayers || DEFAULT_SYSTEM_TEXTS.customPrayers || [];
   const uniqueEdot = Array.from(new Set(allPrayers.map((p: any) => p.edah))) as string[];
   const [activeEdah, setActiveEdah] = useState<string>(uniqueEdot[0] || "mizrach");
+  const [adminActiveTab, setAdminActiveTab] = useState<'prayers' | 'halachot'>('prayers');
 
   useEffect(() => {
     // Check if authenticated from homepage prompt or direct visit
@@ -311,6 +312,35 @@ export default function AdminPage() {
     }));
   };
 
+  const handleAddHalacha = () => {
+    const newHalacha = {
+      id: Date.now().toString(),
+      edah: activeEdah,
+      title: "כותרת חדשה להלכה",
+      content: "תוכן ההלכה...",
+      gender: "both"
+    };
+    setSystemTexts((prev: any) => ({
+      ...prev,
+      customHalachot: [...(prev.customHalachot || []), newHalacha]
+    }));
+  };
+
+  const handleUpdateHalacha = (id: string, field: string, value: string) => {
+    setSystemTexts((prev: any) => ({
+      ...prev,
+      customHalachot: (prev.customHalachot || []).map((h: any) => h.id === id ? { ...h, [field]: value } : h)
+    }));
+  };
+
+  const handleDeleteHalacha = (id: string) => {
+    if (!confirm("האם למחוק הלכה זו?")) return;
+    setSystemTexts((prev: any) => ({
+      ...prev,
+      customHalachot: (prev.customHalachot || []).filter((h: any) => h.id !== id)
+    }));
+  };
+
   if (!isAuthenticated) {
     if (loading) return <div className="min-h-screen flex items-center justify-center font-bold">טוען...</div>;
     return (
@@ -515,13 +545,28 @@ export default function AdminPage() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <BarChart3 className="w-6 h-6 text-slate-400" />
-              עריכת טקסטים ועזרים לאבלים
+              עריכת טקסטים, עזרים והלכות
             </h2>
             <button 
               onClick={handleExportPrayersWord}
               className="bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition"
             >
               <Download className="w-4 h-4" /> ייצוא תפילות {getEdahLabel(activeEdah)} לוורד
+            </button>
+          </div>
+
+          <div className="flex bg-slate-100 p-1 rounded-xl mb-6 w-max">
+            <button 
+              onClick={() => setAdminActiveTab('prayers')}
+              className={`px-6 py-2 rounded-lg font-bold transition-all ${adminActiveTab === 'prayers' ? 'bg-white shadow text-blue-700' : 'text-slate-600 hover:text-slate-800'}`}
+            >
+              תפילות אישיות
+            </button>
+            <button 
+              onClick={() => setAdminActiveTab('halachot')}
+              className={`px-6 py-2 rounded-lg font-bold transition-all ${adminActiveTab === 'halachot' ? 'bg-white shadow text-blue-700' : 'text-slate-600 hover:text-slate-800'}`}
+            >
+              הלכות ומנהגים
             </button>
           </div>
           
@@ -564,62 +609,120 @@ export default function AdminPage() {
             )}
           </div>
           
-          <div className="space-y-6">
-            {(systemTexts.customPrayers || DEFAULT_SYSTEM_TEXTS.customPrayers || []).filter((p: any) => p.edah === activeEdah).map((prayer: any) => (
-              <div key={prayer.id} className="bg-slate-50 p-6 rounded-2xl border border-slate-200 relative">
-                <button 
-                  onClick={() => handleDeletePrayer(prayer.id)} 
-                  className="absolute top-4 left-4 text-red-400 hover:text-red-600 bg-red-50 p-2 rounded-xl transition"
-                  title="מחק טקסט"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pr-12 md:pr-0">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-600 mb-1">כותרת (לדוגמה: אשכבה, קדיש יתום, אל מלא רחמים)</label>
-                    <input 
-                      type="text" 
-                      className="w-full border border-slate-200 rounded-xl p-3 font-bold" 
-                      value={prayer.title} 
-                      onChange={e => handleUpdatePrayer(prayer.id, 'title', e.target.value)} 
-                    />
+          {adminActiveTab === 'prayers' ? (
+            <div className="space-y-6">
+              {(systemTexts.customPrayers || DEFAULT_SYSTEM_TEXTS.customPrayers || []).filter((p: any) => p.edah === activeEdah).map((prayer: any) => (
+                <div key={prayer.id} className="bg-slate-50 p-6 rounded-2xl border border-slate-200 relative">
+                  <button 
+                    onClick={() => handleDeletePrayer(prayer.id)} 
+                    className="absolute top-4 left-4 text-red-400 hover:text-red-600 bg-red-50 p-2 rounded-xl transition"
+                    title="מחק טקסט"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pr-12 md:pr-0">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-600 mb-1">כותרת (לדוגמה: אשכבה, קדיש יתום, אל מלא רחמים)</label>
+                      <input 
+                        type="text" 
+                        className="w-full border border-slate-200 rounded-xl p-3 font-bold" 
+                        value={prayer.title} 
+                        onChange={e => handleUpdatePrayer(prayer.id, 'title', e.target.value)} 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-600 mb-1">מיועד עבור (מגדר)</label>
+                      <select 
+                        className="w-full border border-slate-200 rounded-xl p-3 bg-white"
+                        value={prayer.gender}
+                        onChange={e => handleUpdatePrayer(prayer.id, 'gender', e.target.value)}
+                      >
+                        <option value="both">לשני המינים (יוצג תמיד)</option>
+                        <option value="male">לגבר בלבד (יוצג אם הנפטר איש)</option>
+                        <option value="female">לאישה בלבד (יוצג אם הנפטרת אישה)</option>
+                      </select>
+                    </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-600 mb-1">מיועד עבור (מגדר)</label>
-                    <select 
-                      className="w-full border border-slate-200 rounded-xl p-3 bg-white"
-                      value={prayer.gender}
-                      onChange={e => handleUpdatePrayer(prayer.id, 'gender', e.target.value)}
-                    >
-                      <option value="both">לשני המינים (יוצג תמיד)</option>
-                      <option value="male">לגבר בלבד (יוצג אם הנפטר איש)</option>
-                      <option value="female">לאישה בלבד (יוצג אם הנפטרת אישה)</option>
-                    </select>
+                    <label className="block text-sm font-bold text-slate-600 mb-1">תוכן הטקסט (השתמש ב- 'פלוני בן פלוני' או 'פלונית בת פלונית' והם יוחלפו אוטומטית בשם הנפטר/ת)</label>
+                    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white" dir="rtl">
+                      <style>{`.ql-editor { text-align: right !important; direction: rtl !important; font-family: inherit; font-size: 1.125rem; }`}</style>
+                      <ReactQuill 
+                        theme="snow"
+                        value={prayer.content || ""}
+                        onChange={(content) => handleUpdatePrayer(prayer.id, 'content', content)}
+                        modules={QUILL_MODULES}
+                        className="font-serif text-right"
+                      />
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-600 mb-1">תוכן הטקסט (השתמש ב- 'פלוני בן פלוני' או 'פלונית בת פלונית' והם יוחלפו אוטומטית בשם הנפטר/ת)</label>
-                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white" dir="rtl">
-                    <style>{`.ql-editor { text-align: right !important; direction: rtl !important; font-family: inherit; font-size: 1.125rem; }`}</style>
-                    <ReactQuill 
-                      theme="snow"
-                      value={prayer.content || ""}
-                      onChange={(content) => handleUpdatePrayer(prayer.id, 'content', content)}
-                      modules={QUILL_MODULES}
-                      className="font-serif text-right"
-                    />
+              ))}
+              
+              <button 
+                onClick={handleAddPrayer} 
+                className="w-full py-4 border-2 border-dashed border-blue-300 rounded-2xl text-blue-600 font-bold hover:bg-blue-50 hover:border-blue-400 transition flex justify-center items-center gap-2"
+              >
+                <PlusCircle className="w-5 h-5" /> הוסף קטע תפילה חדש לנוסח {getEdahLabel(activeEdah)}
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {(systemTexts.customHalachot || []).filter((h: any) => h.edah === activeEdah || h.edah === 'all').map((halacha: any) => (
+                <div key={halacha.id} className="bg-slate-50 p-6 rounded-2xl border border-slate-200 relative">
+                  <button 
+                    onClick={() => handleDeleteHalacha(halacha.id)} 
+                    className="absolute top-4 left-4 text-red-400 hover:text-red-600 bg-red-50 p-2 rounded-xl transition"
+                    title="מחק הלכה"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pr-12 md:pr-0">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-600 mb-1">כותרת ההלכה (לדוגמה: דיני סעודת הבראה)</label>
+                      <input 
+                        type="text" 
+                        className="w-full border border-slate-200 rounded-xl p-3 font-bold" 
+                        value={halacha.title} 
+                        onChange={e => handleUpdateHalacha(halacha.id, 'title', e.target.value)} 
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-600 mb-1">שייכות הלכה זו (עדה)</label>
+                      <select 
+                        className="w-full border border-slate-200 rounded-xl p-3 bg-white"
+                        value={halacha.edah}
+                        onChange={e => handleUpdateHalacha(halacha.id, 'edah', e.target.value)}
+                      >
+                        <option value="all">רלוונטי לכל העדות (יוצג תמיד)</option>
+                        {uniqueEdot.map(e => <option key={e} value={e}>רק לנוסח {getEdahLabel(e)}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-slate-600 mb-1">תוכן ההלכה</label>
+                    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white" dir="rtl">
+                      <style>{`.ql-editor { text-align: right !important; direction: rtl !important; font-family: inherit; font-size: 1.125rem; }`}</style>
+                      <ReactQuill 
+                        theme="snow"
+                        value={halacha.content || ""}
+                        onChange={(content) => handleUpdateHalacha(halacha.id, 'content', content)}
+                        modules={QUILL_MODULES}
+                        className="font-serif text-right"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-            
-            <button 
-              onClick={handleAddPrayer} 
-              className="w-full py-4 border-2 border-dashed border-blue-300 rounded-2xl text-blue-600 font-bold hover:bg-blue-50 hover:border-blue-400 transition flex justify-center items-center gap-2"
-            >
-              <PlusCircle className="w-5 h-5" /> הוסף קטע טקסט חדש לנוסח {getEdahLabel(activeEdah)}
-            </button>
-          </div>
+              ))}
+              
+              <button 
+                onClick={handleAddHalacha} 
+                className="w-full py-4 border-2 border-dashed border-emerald-300 rounded-2xl text-emerald-600 font-bold hover:bg-emerald-50 hover:border-emerald-400 transition flex justify-center items-center gap-2"
+              >
+                <PlusCircle className="w-5 h-5" /> הוסף הלכה חדשה
+              </button>
+            </div>
+          )}
         </section>
 
       </main>

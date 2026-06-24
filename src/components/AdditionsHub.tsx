@@ -10,6 +10,7 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
   // Texts State
   const isFemale = eventData?.deceasedGender === 'female';
   const [activeEdah, setActiveEdah] = useState<string | null>(null);
+  const [activeContentType, setActiveContentType] = useState<'prayers' | 'halachot'>('prayers');
   const [activePrayerId, setActivePrayerId] = useState<string | null>(null);
   const prayerRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
 
@@ -26,7 +27,17 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
     p.edah === activeEdah && (p.gender === 'both' || p.gender === (isFemale ? 'female' : 'male'))
   ).sort((a: any, b: any) => a.title.localeCompare(b.title, 'he'));
 
-  const uniqueEdot = Array.from(new Set(allPrayers.map((p: any) => p.edah))) as string[];
+  const allHalachot = systemTexts?.customHalachot || [];
+  const availableHalachot = allHalachot.filter((h: any) => 
+    h.edah === activeEdah || h.edah === 'all'
+  ).sort((a: any, b: any) => a.title.localeCompare(b.title, 'he'));
+
+  const uniqueEdot = Array.from(new Set([
+    ...allPrayers.map((p: any) => p.edah),
+    ...allHalachot.filter((h:any) => h.edah !== 'all').map((h: any) => h.edah)
+  ])) as string[];
+
+  const itemsToDisplay = activeContentType === 'prayers' ? availablePrayers : availableHalachot;
 
   // Notice State
   const [noticeData, setNoticeData] = useState({
@@ -37,6 +48,7 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
     deceasedName: eventData?.deceasedName || "פלוני בן פלוני",
     familyNames: "משפחת ישראלי",
     showFamilyNames: true,
+    funeralStatus: "תתקיים",
     funeralTime: "16:00",
     funeralLocation: "בית העלמין סגולה פתח תקווה",
     showFuneral: true,
@@ -87,7 +99,7 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
             >
               <div className="flex items-center justify-center gap-2">
                 <ListTree className="w-5 h-5" />
-                תפילות
+                {allHalachot.length > 0 ? "תפילות והלכות" : "תפילות"}
               </div>
             </button>
             <button 
@@ -122,14 +134,35 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
                 ) : (
                   <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
                     <div className="flex items-center justify-between border-b pb-4">
-                      <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">נוסח {getEdahLabel(activeEdah)}</span>
-                      </h3>
-                      <button onClick={() => setActiveEdah(null)} className="text-slate-400 hover:text-slate-700 font-medium text-sm border px-3 py-1.5 rounded-lg bg-white shadow-sm">חזור לבחירת נוסח</button>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                          <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">נוסח {getEdahLabel(activeEdah)}</span>
+                        </h3>
+                        {availableHalachot.length > 0 && (
+                          <div className="flex bg-slate-100 p-1 rounded-lg">
+                            <button 
+                              onClick={() => setActiveContentType('prayers')}
+                              className={`px-4 py-1 rounded-md text-sm font-bold transition-colors ${activeContentType === 'prayers' ? 'bg-white shadow text-blue-700' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                              תפילות
+                            </button>
+                            <button 
+                              onClick={() => setActiveContentType('halachot')}
+                              className={`px-4 py-1 rounded-md text-sm font-bold transition-colors ${activeContentType === 'halachot' ? 'bg-white shadow text-blue-700' : 'text-slate-500 hover:text-slate-700'}`}
+                            >
+                              הלכות
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      <button onClick={() => { setActiveEdah(null); setActiveContentType('prayers'); }} className="text-slate-400 hover:text-slate-700 font-medium text-sm border px-3 py-1.5 rounded-lg bg-white shadow-sm shrink-0">חזור לבחירת נוסח</button>
                     </div>
 
-                <div className="flex flex-col rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
-                  {availablePrayers.map((p: any, idx: number) => (
+                <div className="flex flex-col rounded-2xl overflow-hidden border border-slate-200 shadow-sm mt-4">
+                  {itemsToDisplay.length === 0 ? (
+                    <div className="p-8 text-center text-slate-500 font-medium">אין תוכן זמין בקטגוריה זו.</div>
+                  ) : (
+                    itemsToDisplay.map((p: any, idx: number) => (
                     <div key={p.id} ref={(el) => { prayerRefs.current[p.id] = el; }}>
                       <button 
                         onClick={() => setActivePrayerId(activePrayerId === p.id ? null : p.id)} 
@@ -152,8 +185,8 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
                         </div>
                       )}
                     </div>
-                  ))}
-                  {availablePrayers.length === 0 && (
+                  )))}
+                  {availablePrayers.length === 0 && availableHalachot.length === 0 && (
                      <div className="text-slate-500 text-sm p-6 text-center">לא נמצאו טקסטים מותאמים אישית לעדה זו. (מנהל המערכת יכול להוסיף)</div>
                   )}
                 </div>
@@ -196,10 +229,19 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
                       פרטי הלוויה
                     </label>
                     {noticeData.showFuneral && (
-                      <div className="grid grid-cols-2 gap-2 mt-1">
-                        <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1">שעת ההלוויה</label>
-                          <input type="text" className="w-full border p-2 rounded-lg text-sm" value={noticeData.funeralTime} onChange={e => setNoticeData({...noticeData, funeralTime: e.target.value})} />
+                      <div className="mt-2 space-y-2 p-2 bg-slate-50 rounded-lg border">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">נוסח</label>
+                            <select className="w-full border p-2 rounded-lg text-sm" value={noticeData.funeralStatus} onChange={e => setNoticeData({...noticeData, funeralStatus: e.target.value})}>
+                              <option value="תתקיים">תתקיים</option>
+                              <option value="התקיימה">התקיימה</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-slate-500 mb-1">שעת ההלוויה</label>
+                            <input type="text" className="w-full border p-2 rounded-lg text-sm" value={noticeData.funeralTime} onChange={e => setNoticeData({...noticeData, funeralTime: e.target.value})} />
+                          </div>
                         </div>
                         <div>
                           <label className="block text-xs font-bold text-slate-500 mb-1">מקום ההלוויה</label>
@@ -336,7 +378,7 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
                         
                         {noticeData.showFuneral && (
                           <div className={`text-lg md:text-xl lg:text-2xl ${printSizes.funeralInfo} print:leading-normal`}>
-                            ההלוויה תתקיים היום בשעה <span className="font-bold">{noticeData.funeralTime}</span>
+                            ההלוויה {noticeData.funeralStatus} היום בשעה <span className="font-bold">{noticeData.funeralTime}</span>
                             <br/>ב-<span className="font-bold">{noticeData.funeralLocation}</span>
                           </div>
                         )}

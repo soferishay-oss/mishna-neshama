@@ -48,9 +48,7 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
     deceasedName: eventData?.deceasedName || "פלוני בן פלוני",
     familyNames: "משפחת ישראלי",
     showFamilyNames: true,
-    funeralStatus: "תתקיים",
-    funeralTime: "16:00",
-    funeralLocation: "בית העלמין סגולה פתח תקווה",
+    funeralText: "תתקיים ביום שני בשעה 16:00 בבית העלמין סגולה פתח תקווה",
     showFuneral: true,
     shivaAddress: "רחוב הרצל 1, פתח תקווה",
     showShiva: true,
@@ -230,22 +228,9 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
                     </label>
                     {noticeData.showFuneral && (
                       <div className="mt-2 space-y-2 p-2 bg-slate-50 rounded-lg border">
-                        <div className="grid grid-cols-2 gap-2">
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">נוסח</label>
-                            <select className="w-full border p-2 rounded-lg text-sm" value={noticeData.funeralStatus} onChange={e => setNoticeData({...noticeData, funeralStatus: e.target.value})}>
-                              <option value="תתקיים">תתקיים</option>
-                              <option value="התקיימה">התקיימה</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-bold text-slate-500 mb-1">שעת ההלוויה</label>
-                            <input type="text" className="w-full border p-2 rounded-lg text-sm" value={noticeData.funeralTime} onChange={e => setNoticeData({...noticeData, funeralTime: e.target.value})} />
-                          </div>
-                        </div>
                         <div>
-                          <label className="block text-xs font-bold text-slate-500 mb-1">מקום ההלוויה</label>
-                          <input type="text" className="w-full border p-2 rounded-lg text-sm" value={noticeData.funeralLocation} onChange={e => setNoticeData({...noticeData, funeralLocation: e.target.value})} />
+                          <label className="block text-xs font-bold text-slate-500 mb-1">המשך המשפט "ההלוויה..."</label>
+                          <textarea rows={2} className="w-full border p-2 rounded-lg text-sm" value={noticeData.funeralText} onChange={e => setNoticeData({...noticeData, funeralText: e.target.value})} placeholder="תתקיים היום בשעה 16:00..." />
                         </div>
                       </div>
                     )}
@@ -345,7 +330,7 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
                     @page { size: ${noticeData.orientation}; margin: 1cm; }
                     body * { visibility: hidden; }
                     #notice-poster, #notice-poster * { visibility: visible; }
-                    #notice-poster { position: fixed; left: 0; top: 0; width: 100vw; height: 100%; box-shadow: none !important; margin: 0; padding: 2cm; box-sizing: border-box; display: flex !important; flex-direction: column !important; justify-content: space-between !important; align-items: center !important; }
+                    #notice-poster { position: fixed; left: 0; top: 0; width: 100%; height: 100%; box-shadow: none !important; margin: 0; padding: 2cm; box-sizing: border-box; display: flex !important; flex-direction: column !important; justify-content: space-between !important; align-items: center !important; }
                   }
                 `}} />
 
@@ -377,9 +362,8 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
                         </div>
                         
                         {noticeData.showFuneral && (
-                          <div className={`text-lg md:text-xl lg:text-2xl ${printSizes.funeralInfo} print:leading-normal`}>
-                            ההלוויה {noticeData.funeralStatus} היום בשעה <span className="font-bold">{noticeData.funeralTime}</span>
-                            <br/>ב-<span className="font-bold">{noticeData.funeralLocation}</span>
+                          <div className={`text-lg md:text-xl lg:text-2xl ${printSizes.funeralInfo} print:leading-normal whitespace-pre-wrap`}>
+                            ההלוויה <span className="font-bold">{noticeData.funeralText}</span>
                           </div>
                         )}
                         

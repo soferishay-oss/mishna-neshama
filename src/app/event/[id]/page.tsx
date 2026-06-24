@@ -1563,67 +1563,83 @@ export default function EventPage() {
                     <div className="hidden print:block fixed inset-0 bg-white z-[9999] p-8 w-full min-h-screen font-serif" dir="rtl">
                        <style dangerouslySetInnerHTML={{__html: `
                          @media print {
-                           @page { size: A4 portrait; margin: 1.5cm; }
+                           @page { size: A4 portrait; margin: 1cm; }
                            body * { visibility: hidden; }
                            .print-table-container, .print-table-container * { visibility: visible; }
                            .print-table-container { position: absolute; left: 0; top: 0; width: 100%; padding: 0; background: white; }
                            .no-print { display: none !important; }
                          }
                        `}} />
-                       <div className="print-table-container max-w-4xl mx-auto">
-                         <div className="text-center mb-6">
-                           <h1 className="text-2xl font-bold mb-2">בס"ד</h1>
-                           <h2 className="text-4xl font-bold mb-4">לוח לימוד משניות לעילוי נשמת</h2>
-                           <div className="text-3xl font-bold text-slate-800 mb-2">{event?.deceasedName} {event?.deceasedTitle || ''}</div>
-                           <div className="text-xl text-slate-600 mb-4">תאריך יעד לסיום: {event?.shloshimDateHebrew || "לא הוגדר"}</div>
+                       <div className="print-table-container max-w-[21cm] mx-auto text-black">
+                         <div className="text-center mb-4">
+                           <div className="text-sm mb-1">בס"ד</div>
+                           <h2 className="text-2xl font-bold mb-1">לימוד משניות לעילוי נשמת {event?.deceasedName} {event?.deceasedTitle || ''}</h2>
+                           <div className="text-lg mb-1">נא לסיים עד תאריך: {event?.shloshimDateHebrew || "___________"}</div>
+                           <div className="text-lg font-bold">ת.נ.צ.ב.ה.</div>
                          </div>
-                         <table className="w-full border-collapse border border-slate-400 text-center text-lg">
-                           <thead>
-                             <tr className="bg-slate-100">
-                               <th className="border border-slate-400 p-2 font-bold w-1/4">סדר</th>
-                               <th className="border border-slate-400 p-2 font-bold w-1/4">מסכת</th>
-                               <th className="border border-slate-400 p-2 font-bold w-1/2">לומדים</th>
-                             </tr>
-                           </thead>
-                           <tbody>
-                             {SEDARIM.map((sederObj) => {
-                               const tractatesInSeder = sederObj.tractates;
-                               const sederName = sederObj.name;
-                               return tractatesInSeder.map((tractate, idx) => {
-                                 // Check who took chapters in this tractate
-                                 const tData = tractatesData[tractate];
-                                 let takers = new Set<string>();
-                                 if (tData && tData.chapters) {
-                                    Object.values(tData.chapters).forEach((ch: any) => {
-                                       if (ch.takerName) takers.add(ch.takerName);
-                                    });
-                                 }
-                                 const takersStr = Array.from(takers).join(', ');
-                                 const totalChapters = TRACTATE_CHAPTERS[tractate];
-                                 const takenChapters = tData?.chapters ? Object.keys(tData.chapters).length : 0;
-                                 const fullyTaken = takenChapters === totalChapters;
-
-                                 return (
-                                   <tr key={tractate}>
-                                     {idx === 0 && (
-                                       <td rowSpan={tractatesInSeder.length} className="border border-slate-400 font-bold bg-slate-50 align-middle">
-                                         {sederName}
-                                       </td>
-                                     )}
-                                     <td className={`border border-slate-400 p-2 ${fullyTaken ? 'line-through text-slate-400' : 'font-bold'}`}>
-                                       {tractate}
-                                     </td>
-                                     <td className="border border-slate-400 p-2 text-right px-4 h-10">
-                                       {takersStr || " "}
-                                     </td>
+                         
+                         <div className="flex border-4 border-black w-full" dir="rtl">
+                           {[
+                             ["זרעים", "מועד"],
+                             ["נשים", "נזיקין"],
+                             ["קדשים", "טהרות"]
+                           ].map((sederPair, pairIdx) => (
+                             <div key={pairIdx} className={`flex-1 ${pairIdx < 2 ? 'border-l-4 border-black' : ''}`}>
+                               <table className="w-full text-center text-sm border-collapse">
+                                 <thead>
+                                   <tr>
+                                     <th className="border border-black p-1 bg-slate-100 w-1/3">מסכת</th>
+                                     <th className="border border-black p-1 bg-slate-100 w-2/3">שם הלומד</th>
                                    </tr>
-                                 );
-                               });
-                             })}
-                           </tbody>
-                         </table>
-                         <div className="mt-8 text-center text-lg">
-                           "כל השונה הלכות בכל יום מובטח לו שהוא בן העולם הבא"
+                                 </thead>
+                                 <tbody>
+                                   {sederPair.map(sederName => {
+                                      const sederObj = SEDARIM.find(s => s.name === sederName);
+                                      if (!sederObj) return null;
+                                      return (
+                                        <React.Fragment key={sederName}>
+                                          <tr>
+                                            <td colSpan={2} className="border border-black bg-slate-200 font-bold p-1">{sederName}</td>
+                                          </tr>
+                                          {sederObj.tractates.flatMap(tractate => {
+                                             const isKelim = tractate === "כלים";
+                                             const items = isKelim ? ["כלים (א-י)", "כלים (יא-כ)", "כלים (כא-ל)"] : [tractate];
+                                             
+                                             return items.map(displayTractate => {
+                                               const tData = tractatesData[tractate];
+                                               let takers = new Set<string>();
+                                               if (tData && tData.chapters) {
+                                                  let chapterIndices: number[] = [];
+                                                  if (displayTractate === "כלים (א-י)") chapterIndices = [0,1,2,3,4,5,6,7,8,9];
+                                                  else if (displayTractate === "כלים (יא-כ)") chapterIndices = [10,11,12,13,14,15,16,17,18,19];
+                                                  else if (displayTractate === "כלים (כא-ל)") chapterIndices = [20,21,22,23,24,25,26,27,28,29];
+                                                  else chapterIndices = Array.from({length: TRACTATE_CHAPTERS[tractate]}, (_, i) => i);
+                                                  
+                                                  chapterIndices.forEach(idx => {
+                                                    if (tData.chapters[idx]?.takerName) takers.add(tData.chapters[idx].takerName);
+                                                  });
+                                               }
+                                               const takersStr = Array.from(takers).join(', ');
+                                               
+                                               return (
+                                                 <tr key={displayTractate}>
+                                                   <td className="border border-black p-1 font-bold whitespace-nowrap">{displayTractate}</td>
+                                                   <td className="border border-black p-1 whitespace-nowrap overflow-hidden text-ellipsis max-w-[100px] h-6">{takersStr || ""}</td>
+                                                 </tr>
+                                               );
+                                             });
+                                          })}
+                                        </React.Fragment>
+                                      );
+                                   })}
+                                 </tbody>
+                               </table>
+                             </div>
+                           ))}
+                         </div>
+
+                         <div className="mt-4 text-center text-xl font-bold">
+                           תזכו למצוות
                          </div>
                        </div>
                     </div>

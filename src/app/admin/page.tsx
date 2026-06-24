@@ -32,7 +32,8 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   
   // Edah tab state for the editor
-  const allPrayers = systemTexts?.customPrayers || DEFAULT_SYSTEM_TEXTS.customPrayers || [];
+  const prayersCategory = systemTexts?.categories?.find((c: any) => c.id === 'prayers') || DEFAULT_SYSTEM_TEXTS.categories.find(c => c.id === 'prayers');
+  const allPrayers = prayersCategory?.items || [];
   const uniqueEdot = Array.from(new Set(allPrayers.map((p: any) => p.edah))) as string[];
   const [activeEdah, setActiveEdah] = useState<string>(uniqueEdot[0] || "mizrach");
   
@@ -635,7 +636,7 @@ export default function AdminPage() {
             <div className="mt-8 pt-6 border-t border-slate-100">
               <h4 className="font-bold text-slate-700 mb-4">תבניות הודעות שיתוף בווטסאפ</h4>
               <p className="text-xs text-slate-500 mb-4">
-                ניתן להשתמש בתגיות הבאות שיוחלפו אוטומטית: <code>{`{event_name}`}</code> (שם הנפטר), <code>{`{link}`}</code> (הקישור עצמו), <code>{`{left}`}</code> (פרקים שנותרו), <code>{`{taken}`}</code> (פרקים שנלקחו), <code>{`{total}`}</code> (סך כל הפרקים), <code>{`{percent}`}</code> (אחוז התקדמות).
+                ניתן להשתמש בתגיות הבאות שיוחלפו אוטומטית: <code>{`{event_name}`}</code> (שם הנפטר), <code>{`{participant_name}`}</code> (שם הלומד), <code>{`{link}`}</code> (הקישור עצמו), <code>{`{left}`}</code> (פרקים שנותרו), <code>{`{taken}`}</code> (פרקים שנלקחו), <code>{`{total}`}</code> (סך כל הפרקים), <code>{`{percent}`}</code> (אחוז התקדמות).
               </p>
               
               <div className="space-y-4">

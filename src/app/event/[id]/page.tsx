@@ -1397,25 +1397,94 @@ export default function EventPage() {
               {renderTractatesGrid(false)}
             </section>
 
-            {event?.organizerPhone && !isOrganizerRole && (
-              <section className="mt-8">
-                <button 
-                  onClick={handleContactOrganizer}
-                  className="w-full bg-slate-100 border border-slate-200 text-slate-700 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-200 transition"
-                >
-                  <MessageCircle className="w-5 h-5 text-green-500" />
-                  צור קשר עם המארגן ({event.organizerName || "מארגן האירוע"})
-                </button>
-              </section>
-            )}
-          </div>
-        )}
-      </main>
-      )}
+                        {event?.organizerPhone && !isOrganizerRole && (
+                          <div className="mt-8 no-print">
+                            <button 
+                              onClick={handleContactOrganizer}
+                              className="w-full bg-slate-100 border border-slate-200 text-slate-700 font-bold py-4 rounded-xl flex items-center justify-center gap-2 hover:bg-slate-200 transition"
+                            >
+                              <MessageCircle className="w-5 h-5 text-green-500" />
+                              צור קשר עם המארגן ({event.organizerName || "מארגן האירוע"})
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </main>
+                  )}
 
+                  {/* Printable Table for Organizer */}
+                  {isPrintingEmptyTable && (
+                    <div className="hidden print:block fixed inset-0 bg-white z-[9999] p-8 w-full min-h-screen font-serif" dir="rtl">
+                       <style dangerouslySetInnerHTML={{__html: `
+                         @media print {
+                           @page { size: A4 portrait; margin: 1.5cm; }
+                           body * { visibility: hidden; }
+                           .print-table-container, .print-table-container * { visibility: visible; }
+                           .print-table-container { position: absolute; left: 0; top: 0; width: 100%; padding: 0; background: white; }
+                           .no-print { display: none !important; }
+                         }
+                       `}} />
+                       <div className="print-table-container max-w-4xl mx-auto">
+                         <div className="text-center mb-6">
+                           <h1 className="text-2xl font-bold mb-2">בס"ד</h1>
+                           <h2 className="text-4xl font-bold mb-4">לוח לימוד משניות לעילוי נשמת</h2>
+                           <div className="text-3xl font-bold text-slate-800 mb-2">{event?.deceasedName} {event?.deceasedTitle || ''}</div>
+                           <div className="text-xl text-slate-600 mb-4">תאריך יעד לסיום: {event?.shloshimDateHebrew || "לא הוגדר"}</div>
+                         </div>
+                         <table className="w-full border-collapse border border-slate-400 text-center text-lg">
+                           <thead>
+                             <tr className="bg-slate-100">
+                               <th className="border border-slate-400 p-2 font-bold w-1/4">סדר</th>
+                               <th className="border border-slate-400 p-2 font-bold w-1/4">מסכת</th>
+                               <th className="border border-slate-400 p-2 font-bold w-1/2">לומדים</th>
+                             </tr>
+                           </thead>
+                           <tbody>
+                             {SEDARIM.map((sederObj) => {
+                               const tractatesInSeder = sederObj.tractates;
+                               const sederName = sederObj.name;
+                               return tractatesInSeder.map((tractate, idx) => {
+                                 // Check who took chapters in this tractate
+                                 const tData = tractatesData[tractate];
+                                 let takers = new Set<string>();
+                                 if (tData && tData.chapters) {
+                                    Object.values(tData.chapters).forEach((ch: any) => {
+                                       if (ch.takerName) takers.add(ch.takerName);
+                                    });
+                                 }
+                                 const takersStr = Array.from(takers).join(', ');
+                                 const totalChapters = TRACTATE_CHAPTERS[tractate];
+                                 const takenChapters = tData?.chapters ? Object.keys(tData.chapters).length : 0;
+                                 const fullyTaken = takenChapters === totalChapters;
 
+                                 return (
+                                   <tr key={tractate}>
+                                     {idx === 0 && (
+                                       <td rowSpan={tractatesInSeder.length} className="border border-slate-400 font-bold bg-slate-50 align-middle">
+                                         {sederName}
+                                       </td>
+                                     )}
+                                     <td className={`border border-slate-400 p-2 ${fullyTaken ? 'line-through text-slate-400' : 'font-bold'}`}>
+                                       {tractate}
+                                     </td>
+                                     <td className="border border-slate-400 p-2 text-right px-4 h-10">
+                                       {takersStr || " "}
+                                     </td>
+                                   </tr>
+                                 );
+                               });
+                             })}
+                           </tbody>
+                         </table>
+                         <div className="mt-8 text-center text-lg">
+                           "כל השונה הלכות בכל יום מובטח לו שהוא בן העולם הבא"
+                         </div>
+                       </div>
+                    </div>
+                  )}
 
-      {showChaptersModal && selectedTractate && (
+                  {showChaptersModal && selectedTractate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-xl flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center mb-4">

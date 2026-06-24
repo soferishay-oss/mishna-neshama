@@ -10,17 +10,17 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
   // משנה -> מ ש נ ה
   const mishnaOrder = [
     { id: "m", char: "מ", gradient: "from-blue-700 to-blue-500" },
-    { id: "sh", char: "ש", gradient: "from-amber-500 to-amber-400" },
+    { id: "sh", char: "ש", gradient: "from-orange-600 via-red-500 to-yellow-500" },
     { id: "n", char: "נ", gradient: "from-blue-700 to-blue-500" },
-    { id: "h", char: "ה", gradient: "from-amber-500 to-amber-400" },
+    { id: "h", char: "ה", gradient: "from-orange-600 via-red-500 to-yellow-500" },
   ];
 
   // נשמה -> נ ש מ ה
   const neshamaOrder = [
     { id: "n", char: "נ", gradient: "from-blue-700 to-blue-500" },
-    { id: "sh", char: "ש", gradient: "from-amber-500 to-amber-400" },
+    { id: "sh", char: "ש", gradient: "from-orange-600 via-red-500 to-yellow-500" },
     { id: "m", char: "מ", gradient: "from-blue-700 to-blue-500" },
-    { id: "h", char: "ה", gradient: "from-amber-500 to-amber-400" },
+    { id: "h", char: "ה", gradient: "from-orange-600 via-red-500 to-yellow-500" },
   ];
 
   const currentOrder = phase === "mishna" || phase === "emerge" ? mishnaOrder : neshamaOrder;

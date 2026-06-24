@@ -49,7 +49,7 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
     font: "sans-serif",
     borderThickness: "medium",
     orientation: "portrait",
-    showBarcode: true
+    showBarcode: !!eventData?.id
   });
 
   const handlePrint = () => {
@@ -259,10 +259,19 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
                     </div>
                   </div>
                   
-                  <div className="pt-2 border-t mt-2">
-                     <label className="flex items-center gap-2 text-sm font-bold text-slate-700 cursor-pointer">
-                        <input type="checkbox" className="w-4 h-4" checked={noticeData.showBarcode} onChange={e => setNoticeData({...noticeData, showBarcode: e.target.checked})} />
+                  <div className={`pt-2 border-t mt-2 ${(!eventData || !eventData.id) ? 'opacity-50' : ''}`}>
+                     <label className={`flex items-center gap-2 text-sm font-bold text-slate-700 ${(!eventData || !eventData.id) ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                        <input 
+                          type="checkbox" 
+                          className="w-4 h-4 disabled:cursor-not-allowed" 
+                          checked={noticeData.showBarcode} 
+                          disabled={!eventData || !eventData.id}
+                          onChange={e => setNoticeData({...noticeData, showBarcode: e.target.checked})} 
+                        />
                         הוסף ברקוד ללימוד משניות בתחתית המודעה
+                        {(!eventData || !eventData.id) && (
+                          <span className="text-xs font-normal text-slate-500 mr-2">[לא זמין - לא נוצר עדיין אירוע]</span>
+                        )}
                      </label>
                   </div>
                 </div>

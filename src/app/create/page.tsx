@@ -427,32 +427,6 @@ function CreateEvent() {
               <label htmlFor="showGregorian" className="text-sm text-slate-700">הצג תאריכים לועזיים במסך האירוע</label>
             </div>
 
-            <div className="pt-2">
-              <label className="block text-sm font-medium text-slate-700 mb-2">הוסף תמונת הנפטר (אופציונלי)</label>
-              <input 
-                type="file" 
-                accept="image/*" 
-                ref={fileInputRef} 
-                className="hidden" 
-                onChange={handleImageChange}
-              />
-              <div 
-                onClick={handleImageClick}
-                className="border-2 border-dashed border-slate-300 rounded-xl p-6 flex flex-col items-center justify-center text-slate-500 hover:bg-slate-50 transition cursor-pointer hover:border-blue-300 relative overflow-hidden h-32"
-              >
-                {selectedImage ? (
-                  <img 
-                    src={URL.createObjectURL(selectedImage)} 
-                    alt="תמונה נבחרת" 
-                    className="absolute inset-0 w-full h-full object-cover opacity-60"
-                  />
-                ) : null}
-                <Camera className={`w-8 h-8 mb-2 ${selectedImage ? 'text-white drop-shadow-md relative z-10' : 'text-slate-400'}`} />
-                <span className={`text-sm font-medium ${selectedImage ? 'text-white drop-shadow-md relative z-10' : ''}`}>
-                  {selectedImage ? 'החלף תמונה' : 'לחץ לבחירת תמונה'}
-                </span>
-              </div>
-            </div>
           </section>
 
           <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">

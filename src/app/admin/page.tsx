@@ -36,15 +36,45 @@ export default function AdminPage() {
   const [activeEdah, setActiveEdah] = useState<string>(uniqueEdot[0] || "mizrach");
 
   useEffect(() => {
-    // Check if authenticated from homepage prompt
+    // Check if authenticated from homepage prompt or direct visit
     if (sessionStorage.getItem('adminAuth') === 'true') {
       setIsAuthenticated(true);
       loadData();
     } else {
-      // Force them back to homepage to login
-      window.location.href = "/";
+      setLoading(false);
     }
   }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const pass = (document.getElementById('adminPass') as HTMLInputElement).value;
+    try {
+      let adminPassword = "4614320";
+      if (isMockMode) {
+        const res = await fetch("/api/mockdb");
+        const data = await res.json();
+        adminPassword = data.system_texts?.adminPassword || "4614320";
+      } else {
+        const snap = await get(ref(db, "system_texts"));
+        if (snap.exists()) {
+          adminPassword = snap.val().adminPassword || "4614320";
+        }
+      }
+
+      if (pass === adminPassword) {
+        sessionStorage.setItem('adminAuth', 'true');
+        setIsAuthenticated(true);
+        loadData();
+      } else {
+        alert("סיסמה שגויה");
+        setLoading(false);
+      }
+    } catch (err) {
+      alert("שגיאה בהתחברות");
+      setLoading(false);
+    }
+  };
 
   const migrateOldTexts = (texts: any) => {
     if (!texts) return texts;
@@ -281,8 +311,45 @@ export default function AdminPage() {
     }));
   };
 
-  if (!isAuthenticated) return null; // handled by redirect
-  if (loading) return <div className="min-h-screen flex items-center justify-center font-bold">טוען נתונים...</div>;
+  if (!isAuthenticated) {
+    if (loading) return <div className="min-h-screen flex items-center justify-center font-bold">טוען...</div>;
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 max-w-md w-full text-center relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
+          <div className="w-20 h-20 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+            <Lock className="w-10 h-10" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-800 mb-2">ניהול מערכת</h1>
+          <p className="text-slate-500 mb-8">הזן סיסמת מנהל מערכת כדי להמשיך</p>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input 
+              id="adminPass"
+              type="password" 
+              placeholder="סיסמה"
+              className="w-full text-center bg-slate-50 border border-slate-200 rounded-xl px-4 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+              required
+            />
+            <button 
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 text-white font-bold py-4 text-lg rounded-xl hover:bg-blue-700 transition-all active:scale-[0.98]"
+            >
+              כניסה
+            </button>
+          </form>
+          <div className="mt-8 pt-6 border-t border-slate-100">
+            <Link href="/" className="text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors inline-flex items-center gap-2">
+              <LogOut className="w-4 h-4 rotate-180" />
+              חזרה למסך הראשי
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center font-bold">טוען...</div>;
 
   const EDOT_LABELS: Record<string, string> = {
     mizrach: "עדות המזרח",

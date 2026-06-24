@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { BookOpen, Users, PlusCircle, Trophy, Heart } from "lucide-react";
+import { BookOpen, Users, PlusCircle, Trophy, Heart, ShieldCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import SplashScreen from "@/components/SplashScreen";
 import { db, isMockMode } from "@/lib/firebase";
@@ -76,6 +76,54 @@ function HomePageContent() {
               הצטרף לאירוע קיים
             </Link>
 
+            <button 
+              onClick={async () => {
+                const pass = prompt("לכניסת מארגן אירוע, הקלד מספר טלפון:");
+                if (!pass) return;
+                try {
+                  let foundEventId = null;
+                  if (isMockMode) {
+                    const res = await fetch("/api/mockdb");
+                    const data = await res.json();
+                    const events = data.events || {};
+                    for (const [id, ev] of Object.entries(events) as any) {
+                      if (ev.organizerPhone && ev.organizerPhone.replace(/\D/g, '') === pass.replace(/\D/g, '')) {
+                        foundEventId = id; break;
+                      }
+                    }
+                  } else {
+                    const snap = await get(ref(db));
+                    if (snap.exists()) {
+                      const dbData = snap.val();
+                      const events = dbData.events || {};
+                      for (const [id, ev] of Object.entries(events) as any) {
+                        if (ev.organizerPhone && ev.organizerPhone.replace(/\D/g, '') === pass.replace(/\D/g, '')) {
+                          foundEventId = id; break;
+                        }
+                      }
+                    }
+                  }
+
+                  if (foundEventId) {
+                    const orgEvents = JSON.parse(localStorage.getItem("organizedEvents") || "[]");
+                    if (!orgEvents.includes(foundEventId)) {
+                      orgEvents.push(foundEventId);
+                      localStorage.setItem("organizedEvents", JSON.stringify(orgEvents));
+                    }
+                    router.push(`/event/${foundEventId}`);
+                  } else {
+                    alert("שגיאה: לא נמצאו אירועים עבור מספר טלפון זה.");
+                  }
+                } catch (e) {
+                  alert("שגיאה בהתחברות.");
+                }
+              }}
+              className="flex items-center justify-center w-full bg-slate-100 text-slate-700 py-4 px-6 rounded-2xl font-medium text-lg hover:bg-slate-200 border border-slate-200 transition-all shadow-sm active:scale-[0.98] mt-4"
+            >
+              <ShieldCheck className="ml-2 w-6 h-6 text-slate-500" />
+              כניסת מארגן לאירוע קיים
+            </button>
+
             <Link href="/tools" className="flex items-center justify-center w-full bg-teal-50 text-teal-700 py-4 px-6 rounded-2xl font-medium text-lg hover:bg-teal-100 border border-teal-200 transition-all shadow-sm active:scale-[0.98] mt-4">
               <Heart className="ml-2 w-6 h-6 text-teal-500" />
               עזרים לאבלים ולמנחמים
@@ -88,62 +136,7 @@ function HomePageContent() {
           </div>
           
           <div className="mt-8 text-center">
-            <button 
-              onClick={async () => {
-                const pass = prompt("לכניסת מנהל מערכת, הקלד סיסמה. למארגן אירוע, הקלד מספר טלפון:");
-                if (!pass) return;
-                // Fetch to check admin password or organizer
-                try {
-                  let adminPassword = "4614320";
-                  let foundEventId = null;
-                  if (isMockMode) {
-                    const res = await fetch("/api/mockdb");
-                    const data = await res.json();
-                    adminPassword = data.system_texts?.adminPassword || "4614320";
-                    const events = data.events || {};
-                    for (const [id, ev] of Object.entries(events) as any) {
-                      if (ev.organizerPhone && ev.organizerPhone.replace(/\D/g, '') === pass.replace(/\D/g, '')) {
-                        foundEventId = id; break;
-                      }
-                    }
-                  } else {
-                    const snap = await get(ref(db));
-                    if (snap.exists()) {
-                      const dbData = snap.val();
-                      adminPassword = dbData.system_texts?.adminPassword || "4614320";
-                      const events = dbData.events || {};
-                      for (const [id, ev] of Object.entries(events) as any) {
-                        if (ev.organizerPhone && ev.organizerPhone.replace(/\D/g, '') === pass.replace(/\D/g, '')) {
-                          foundEventId = id; break;
-                        }
-                      }
-                    }
-                  }
-
-                  if (pass === adminPassword) {
-                    sessionStorage.setItem('adminAuth', 'true');
-                    router.push("/admin");
-                    return;
-                  }
-
-                  if (foundEventId) {
-                    const orgEvents = JSON.parse(localStorage.getItem("organizedEvents") || "[]");
-                    if (!orgEvents.includes(foundEventId)) {
-                      orgEvents.push(foundEventId);
-                      localStorage.setItem("organizedEvents", JSON.stringify(orgEvents));
-                    }
-                    router.push(`/event/${foundEventId}`);
-                  } else {
-                    alert("שגיאה: הסיסמה שגויה, או שלא נמצאו אירועים עבור מספר טלפון זה.");
-                  }
-                } catch (e) {
-                  alert("שגיאה בהתחברות.");
-                }
-              }} 
-              className="text-slate-500 hover:text-slate-700 text-sm font-medium transition-colors"
-            >
-              כניסת מנהל מערכת / מארגן
-            </button>
+            {/* Unified login button removed */}
           </div>
 
           <footer className="mt-16 text-slate-400 text-sm">

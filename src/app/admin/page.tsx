@@ -631,6 +631,48 @@ export default function AdminPage() {
               />
               <p className="text-xs text-slate-400 mt-1">כאן מומלץ לתת קרדיט למפתחים ולמקורות הטקסט כגון Sefaria ותורת אמת.</p>
             </div>
+
+            <div className="mt-8 pt-6 border-t border-slate-100">
+              <h4 className="font-bold text-slate-700 mb-4">תבניות הודעות שיתוף בווטסאפ</h4>
+              <p className="text-xs text-slate-500 mb-4">
+                ניתן להשתמש בתגיות הבאות שיוחלפו אוטומטית: <code>{`{event_name}`}</code> (שם הנפטר), <code>{`{link}`}</code> (הקישור עצמו), <code>{`{left}`}</code> (פרקים שנותרו), <code>{`{taken}`}</code> (פרקים שנלקחו), <code>{`{total}`}</code> (סך כל הפרקים), <code>{`{percent}`}</code> (אחוז התקדמות).
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-600 mb-1">העתקת קישור לאירוע (מארגן)</label>
+                  <textarea 
+                    className="w-full border rounded-xl p-3 min-h-[80px] font-sans" 
+                    value={systemTexts.shareTemplates?.eventLink || DEFAULT_SYSTEM_TEXTS.shareTemplates.eventLink} 
+                    onChange={e => setSystemTexts({...systemTexts, shareTemplates: { ...systemTexts.shareTemplates, eventLink: e.target.value }})} 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-600 mb-1">העתקת הודעת הזמנה (מארגן)</label>
+                  <textarea 
+                    className="w-full border rounded-xl p-3 min-h-[80px] font-sans" 
+                    value={systemTexts.shareTemplates?.inviteMessage || DEFAULT_SYSTEM_TEXTS.shareTemplates.inviteMessage} 
+                    onChange={e => setSystemTexts({...systemTexts, shareTemplates: { ...systemTexts.shareTemplates, inviteMessage: e.target.value }})} 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-600 mb-1">שיתוף האפליקציה לזיכוי הרבים</label>
+                  <textarea 
+                    className="w-full border rounded-xl p-3 min-h-[80px] font-sans" 
+                    value={systemTexts.shareTemplates?.appShare || DEFAULT_SYSTEM_TEXTS.shareTemplates.appShare} 
+                    onChange={e => setSystemTexts({...systemTexts, shareTemplates: { ...systemTexts.shareTemplates, appShare: e.target.value }})} 
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-600 mb-1">שיתוף סטטוס כללי ללומדים (משתמש רגיל)</label>
+                  <textarea 
+                    className="w-full border rounded-xl p-3 min-h-[80px] font-sans" 
+                    value={systemTexts.shareTemplates?.generalStatus || DEFAULT_SYSTEM_TEXTS.shareTemplates.generalStatus} 
+                    onChange={e => setSystemTexts({...systemTexts, shareTemplates: { ...systemTexts.shareTemplates, generalStatus: e.target.value }})} 
+                  />
+                </div>
+              </div>
+            </div>
         </section>
 
         {/* Texts Editor with Tabs */}
@@ -667,11 +709,9 @@ export default function AdminPage() {
               <div className="flex justify-between items-center mb-6 border-b border-slate-200 pb-4">
                 <div className="flex items-center gap-4">
                   <h3 className="text-xl font-bold text-blue-900">{activeCategory.name}</h3>
-                  {activeCategory.id !== 'prayers' && activeCategory.id !== 'halachot' && (
-                    <button onClick={() => handleDeleteCategory(activeCategory.id)} className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1">
-                      <Trash2 className="w-4 h-4"/> מחיקת נושא
-                    </button>
-                  )}
+                  <button onClick={() => handleDeleteCategory(activeCategory.id)} className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1">
+                    <Trash2 className="w-4 h-4"/> מחיקת נושא
+                  </button>
                 </div>
                 <div className="flex gap-2">
                   <label className="bg-emerald-50 cursor-pointer text-emerald-700 border border-emerald-200 hover:bg-emerald-100 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition">

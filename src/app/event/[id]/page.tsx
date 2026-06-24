@@ -49,6 +49,7 @@ export default function EventPage() {
   
   const [isPrintingEmptyTable, setIsPrintingEmptyTable] = useState(false);
   const [manualAssignName, setManualAssignName] = useState("");
+  const [quickAssignNames, setQuickAssignNames] = useState<Record<string, string>>({});
   
   const checkIsOrganizer = (profile: any, eventData: any) => {
     if (!profile || !eventData) return false;
@@ -404,6 +405,55 @@ export default function EventPage() {
     router.push("/");
   };
 
+  const handleAssignFullTractate = async (displayTractate: string) => {
+    const learnerName = quickAssignNames[displayTractate] || "";
+    if (!learnerName.trim()) return;
+    if (!confirm(`האם להקצות את ${displayTractate} ל-${learnerName}?`)) return;
+
+    let tractateName = displayTractate;
+    let chaptersToAssign: number[] = [];
+    if (displayTractate === "כלים (א-י)") {
+       chaptersToAssign = [0,1,2,3,4,5,6,7,8,9];
+       tractateName = "כלים";
+    } else if (displayTractate === "כלים (יא-כ)") {
+       chaptersToAssign = [10,11,12,13,14,15,16,17,18,19];
+       tractateName = "כלים";
+    } else if (displayTractate === "כלים (כא-ל)") {
+       chaptersToAssign = [20,21,22,23,24,25,26,27,28,29];
+       tractateName = "כלים";
+    } else {
+       const totalCh = TRACTATE_CHAPTERS[tractateName];
+       chaptersToAssign = Array.from({length: totalCh}, (_, i) => i);
+    }
+
+    const updates: any = {};
+    const timestamp = Date.now();
+    chaptersToAssign.forEach(ch => {
+       updates[`events/${id}/tractates/${tractateName}/chapters/${ch}`] = {
+           takerName: learnerName,
+           takerPhone: "",
+           takenAt: timestamp,
+           isCompleted: false
+       };
+    });
+
+    if (isMockMode) {
+      await Promise.all(chaptersToAssign.map(ch => 
+         fetch(`/api/mockdb?path=events/${id}/tractates/${tractateName}/chapters/${ch}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates[`events/${id}/tractates/${tractateName}/chapters/${ch}`])
+         })
+      ));
+      refreshMockData();
+    } else {
+       await update(ref(db), updates);
+    }
+    
+    setQuickAssignNames(prev => ({ ...prev, [displayTractate]: "" }));
+    alert(`ההקצאה בוצעה בהצלחה ל-${learnerName}`);
+  };
+
   const fallbackCopyTextToClipboard = (text: string) => {
     try {
       const textArea = document.createElement("textarea");
@@ -432,19 +482,42 @@ export default function EventPage() {
     }
   };
 
+  const replacePlaceholders = (template: string) => {
+    const title = event?.deceasedTitle ? ` ${event?.deceasedTitle}` : '';
+    const eventName = `${event?.deceasedName || ""}${title}`;
+    
+    let totalChapters = 0;
+    let takenChapters = 0;
+    Object.keys(TRACTATE_CHAPTERS).forEach(t => {
+      totalChapters += TRACTATE_CHAPTERS[t];
+      takenChapters += Object.keys(tractatesData[t]?.chapters || {}).length;
+    });
+    
+    const percent = totalChapters > 0 ? Math.round((takenChapters / totalChapters) * 100) : 0;
+    const left = totalChapters - takenChapters;
+    
+    return template
+      .replace(/{event_name}/g, eventName)
+      .replace(/{link}/g, window.location.href)
+      .replace(/{left}/g, left.toString())
+      .replace(/{taken}/g, takenChapters.toString())
+      .replace(/{total}/g, totalChapters.toString())
+      .replace(/{percent}/g, percent.toString());
+  };
+
   const copyLink = () => {
-    safeCopy(window.location.href, "הקישור הועתק ללוח!");
+    const tmpl = systemTexts?.shareTemplates?.eventLink || DEFAULT_SYSTEM_TEXTS.shareTemplates.eventLink;
+    safeCopy(replacePlaceholders(tmpl), "הקישור הועתק ללוח!");
   };
 
   const copyTextAndLink = () => {
-    const title = event?.deceasedTitle ? ` ${event.deceasedTitle}` : ' ז"ל';
-    const text = `הצטרפו ללימוד משניות לעילוי נשמת ${event?.deceasedName}${title}.\nיעד הסיום: ${event?.shloshimDateHebrew}\n\nלהצטרפות ובחירת מסכת או פרקים לחצו כאן:\n${window.location.href}`;
-    safeCopy(text, "ההודעה והקישור הועתקו ללוח!");
+    const tmpl = systemTexts?.shareTemplates?.inviteMessage || DEFAULT_SYSTEM_TEXTS.shareTemplates.inviteMessage;
+    safeCopy(replacePlaceholders(tmpl), "ההודעה והקישור הועתקו ללוח!");
   };
 
   const copyAppShare = () => {
-    const text = `עזור בהפצת האפליקציה לזיכוי הרבים:\n${window.location.origin}`;
-    safeCopy(text, "הודעת השיתוף הועתקה ללוח!");
+    const tmpl = systemTexts?.shareTemplates?.appShare || DEFAULT_SYSTEM_TEXTS.shareTemplates.appShare;
+    safeCopy(replacePlaceholders(tmpl), "הודעת השיתוף הועתקה ללוח!");
   };
 
   const getMessageText = (template: string, participantName: string, tractatesList: string) => {
@@ -824,6 +897,9 @@ export default function EventPage() {
   };
 
   const copyGeneralStatus = () => {
+      const tmpl = systemTexts?.shareTemplates?.generalStatus || DEFAULT_SYSTEM_TEXTS.shareTemplates.generalStatus;
+      let msg = replacePlaceholders(tmpl);
+      
       const emptyTractates: string[] = [];
       const partialTractates: string[] = [];
       
@@ -839,20 +915,14 @@ export default function EventPage() {
           });
       });
       
-      const title = event?.deceasedTitle ? ` ${event.deceasedTitle}` : ' ז"ל';
-      let msg = `נותרו ${daysRemaining !== null && daysRemaining >= 0 ? daysRemaining : '?'} ימים לסיום המשניות לעילוי נשמת ${event?.deceasedName}${title}.\nחסרים עדיין פרקים שישלימו את הש"ס. תרצה אולי לקחת עוד פרק?\n\n`;
       if (emptyTractates.length > 0) {
-          msg += `*מסכתות שלמות פנויות:*\n${emptyTractates.join(", ")}\n\n`;
+          msg += `\n\n*מסכתות שלמות פנויות:*\n${emptyTractates.join(", ")}`;
       }
       if (partialTractates.length > 0) {
-          msg += `*מסכתות פנויות חלקית:*\n${partialTractates.join(", ")}\n\n`;
-      }
-      msg += `להצטרפות ולקיחת מסכת לחצו כאן:\n${window.location.href}\n\n`;
-      if (event?.whatsappGroup) {
-          msg += `להצטרפות לקבוצת הוואצפ המשותפת:\n${event.whatsappGroup}`;
+          msg += `\n\n*מסכתות חסרות פרקים:*\n${partialTractates.join(", ")}`;
       }
       
-      safeCopy(msg, "קול קורא הועתק ללוח. כעת תוכל להדביק אותו בקבוצת הוואצפ המשותפת!");
+      safeCopy(msg, "הסטטוס הועתק ללוח!");
   };
 
   const renderTractatesGrid = (isOrganizerMode: boolean) => {
@@ -1309,7 +1379,7 @@ export default function EventPage() {
                     onClick={handlePrintEmptyTable}
                     className="bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-100 transition flex items-center gap-2"
                   >
-                    <Printer className="w-4 h-4" /> הדפס טבלה ריקה
+                    <Printer className="w-4 h-4" /> הדפס טבלה לומדים
                   </button>
                   <button 
                     onClick={handleExportParticipants}
@@ -1320,6 +1390,78 @@ export default function EventPage() {
                 </div>
               </div>
               {renderTractatesGrid(true)}
+            </section>
+
+            <section className="bg-white p-5 rounded-2xl shadow-sm border border-amber-100">
+              <h3 className="text-lg font-bold text-slate-800 mb-4">הקצאה ידנית מהירה של מסכתות</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 border-b">
+                      <th className="p-3 text-right">סדר / מסכת</th>
+                      <th className="p-3 text-right">מצב נוכחי (לומדים)</th>
+                      <th className="p-3 text-right">הקצאה לשם (לומד חדש)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {SEDARIM.map((seder) => (
+                      <React.Fragment key={seder.name}>
+                        <tr className="bg-amber-50">
+                          <td colSpan={3} className="p-2 font-bold text-amber-800">{seder.name}</td>
+                        </tr>
+                        {seder.tractates.flatMap(tractate => {
+                           const isKelim = tractate === "כלים";
+                           const items = isKelim ? ["כלים (א-י)", "כלים (יא-כ)", "כלים (כא-ל)"] : [tractate];
+                           
+                           return items.map(displayTractate => {
+                             // Check takers
+                             let tData = tractatesData[tractate];
+                             let takersStr = "";
+                             if (tData && tData.chapters) {
+                                let takers = new Set<string>();
+                                let chapterIndices: number[] = [];
+                                if (displayTractate === "כלים (א-י)") chapterIndices = [0,1,2,3,4,5,6,7,8,9];
+                                else if (displayTractate === "כלים (יא-כ)") chapterIndices = [10,11,12,13,14,15,16,17,18,19];
+                                else if (displayTractate === "כלים (כא-ל)") chapterIndices = [20,21,22,23,24,25,26,27,28,29];
+                                else chapterIndices = Array.from({length: TRACTATE_CHAPTERS[tractate]}, (_, i) => i);
+                                
+                                chapterIndices.forEach(idx => {
+                                  if (tData.chapters[idx]?.takerName) takers.add(tData.chapters[idx].takerName);
+                                });
+                                takersStr = Array.from(takers).join(", ");
+                             }
+
+                             return (
+                               <tr key={displayTractate} className="border-b border-slate-50 hover:bg-slate-50">
+                                 <td className="p-3 font-bold text-slate-700">{displayTractate}</td>
+                                 <td className="p-3 text-slate-500">{takersStr || "-"}</td>
+                                 <td className="p-3">
+                                   <div className="flex items-center gap-2">
+                                     <input 
+                                       type="text" 
+                                       placeholder="שם הלומד..." 
+                                       className="border rounded-lg px-3 py-1.5 text-sm w-48"
+                                       value={quickAssignNames[displayTractate] || ""}
+                                       onChange={e => setQuickAssignNames(p => ({ ...p, [displayTractate]: e.target.value }))}
+                                     />
+                                     <button 
+                                       onClick={() => handleAssignFullTractate(displayTractate)}
+                                       disabled={!(quickAssignNames[displayTractate] || "").trim()}
+                                       className="bg-blue-600 text-white px-4 py-1.5 rounded-lg font-bold text-sm hover:bg-blue-700 disabled:opacity-50 transition"
+                                     >
+                                       שייך מסכת
+                                     </button>
+                                   </div>
+                                 </td>
+                               </tr>
+                             );
+                           });
+                        })}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </section>
 
             <section className="bg-red-50 p-5 rounded-2xl shadow-sm border border-red-200">

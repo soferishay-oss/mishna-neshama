@@ -7,11 +7,12 @@ import { db, isMockMode } from "@/lib/firebase";
 import { HDate } from "@hebcal/core";
 import { EventData } from "@/lib/events";
 import { useAuth } from "@/hooks/useAuth";
-import { Calendar, Users, Share2, MessageCircle, BookOpen, CheckCircle2, Trash2, Undo2, X, Link as LinkIcon, Mail, Copy, ListTree, PlayCircle, Info, Settings, Menu, Home, PlusCircle, Settings2, Briefcase, ChevronDown, Download, ImageIcon, Trophy, Flame } from "lucide-react";
+import { Calendar, Users, Share2, MessageCircle, BookOpen, CheckCircle2, Trash2, Undo2, X, Link as LinkIcon, Mail, Copy, ListTree, PlayCircle, Info, Settings, Menu, Home, PlusCircle, Settings2, Briefcase, ChevronDown, Download, ImageIcon, Trophy, Flame, Printer } from "lucide-react";
 import QRCode from "react-qr-code";
 import { SEDARIM, TRACTATE_CHAPTERS, getHebrewChapter } from "@/lib/tractates";
 import Link from "next/link";
 import AdditionsHub from "@/components/AdditionsHub";
+import NoticeHub from "@/components/NoticeHub";
 import { downloadCSV } from "@/lib/exportUtils";
 import { generateCompletionPoster } from "@/lib/posterGenerator";
 import { DEFAULT_SYSTEM_TEXTS } from "@/lib/defaultTexts";
@@ -31,7 +32,7 @@ export default function EventPage() {
   const [loading, setLoading] = useState(true);
   
   const [isOrganizerRole, setIsOrganizerRole] = useState(false);
-  const [activeView, setActiveView] = useState<'learning' | 'additions' | 'organizer' | 'settings' | 'about'>('learning');
+  const [activeView, setActiveView] = useState<'learning' | 'additions' | 'notice' | 'organizer' | 'settings' | 'about'>('learning');
   const [showSidebar, setShowSidebar] = useState(false);
   const [systemTexts, setSystemTexts] = useState<any>(DEFAULT_SYSTEM_TEXTS);
   
@@ -45,6 +46,9 @@ export default function EventPage() {
   const [showAdminLogin, setShowAdminLogin] = useState(false);
   const [adminPasswordInput, setAdminPasswordInput] = useState("");
   const [adminLoginError, setAdminLoginError] = useState(false);
+  
+  const [isPrintingEmptyTable, setIsPrintingEmptyTable] = useState(false);
+  const [manualAssignName, setManualAssignName] = useState("");
   
   const checkIsOrganizer = (profile: any, eventData: any) => {
     if (!profile || !eventData) return false;
@@ -288,7 +292,17 @@ export default function EventPage() {
   const handleTakeSelectedChapters = async () => {
     if (!selectedTractate || selectedChapters.length === 0) return;
     
-    if (!participantProfile || !participantProfile.name) {
+    let assignName = participantProfile?.name;
+    let assignPhone = participantProfile?.phone || "";
+    let assignEmail = participantProfile?.email || "";
+
+    if (isOrganizerRole && activeView === 'organizer' && manualAssignName.trim() !== "") {
+      assignName = manualAssignName.trim();
+      assignPhone = ""; 
+      assignEmail = "";
+    }
+
+    if (!assignName) {
       alert("יש להזין שם כדי לקחת פרקים");
       setShowJoinForm(true);
       return;
@@ -296,9 +310,9 @@ export default function EventPage() {
 
     const updates: any = {};
     const takerData = {
-      takerName: participantProfile.name,
-      takerPhone: participantProfile.phone || "",
-      takerEmail: participantProfile.email || "",
+      takerName: assignName,
+      takerPhone: assignPhone,
+      takerEmail: assignEmail,
       takerId: user?.uid || "anon",
       takenAt: new Date().toISOString(),
       isCompleted: false
@@ -325,6 +339,7 @@ export default function EventPage() {
     setShowChaptersModal(false);
     setSelectedTractate(null);
     setSelectedChapters([]);
+    setManualAssignName("");
   };
 
   const handleReleaseChapter = async (tractateName: string, chIndex: number) => {
@@ -508,6 +523,14 @@ export default function EventPage() {
     downloadCSV(dataToExport, `participants_${event?.deceasedName || 'event'}.csv`);
   };
 
+  const handlePrintEmptyTable = () => {
+    setIsPrintingEmptyTable(true);
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => setIsPrintingEmptyTable(false), 500);
+    }, 100);
+  };
+
   const handleGeneratePoster = async (withNames: boolean = true) => {
     if (!event) return;
     const participantsList = withNames ? Object.keys(participantsMap) : [];
@@ -631,6 +654,8 @@ export default function EventPage() {
                   value={joinName} onChange={e => setJoinName(e.target.value)}
                 />
               </div>
+
+              
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">טלפון נייד</label>
                 <input 
@@ -1159,7 +1184,10 @@ export default function EventPage() {
                   <BookOpen className="w-5 h-5" /> הלימוד שלי
                 </button>
                 <button onClick={() => handleSetView('additions')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeView === 'additions' ? 'bg-blue-100 text-blue-700' : 'text-slate-700 hover:bg-slate-50'}`}>
-                  <Briefcase className="w-5 h-5" /> עזרים לאבלים ולמנחמים
+                  <Briefcase className="w-5 h-5" /> מאגר תפילות ותוכן
+                </button>
+                <button onClick={() => handleSetView('notice')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeView === 'notice' ? 'bg-blue-100 text-blue-700' : 'text-slate-700 hover:bg-slate-50'}`}>
+                  <BookOpen className="w-5 h-5" /> עיצוב מודעת אבל
                 </button>
                 <button onClick={() => router.push('/create')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-slate-700 hover:bg-slate-50 transition">
                   <PlusCircle className="w-5 h-5" /> יצירת אירוע חדש
@@ -1201,6 +1229,10 @@ export default function EventPage() {
 
       {activeView === 'additions' ? (
         <AdditionsHub eventData={event} systemTexts={systemTexts} />
+      ) : activeView === 'notice' ? (
+        <div className="max-w-5xl mx-auto mt-4 h-[calc(100vh-100px)]">
+          <NoticeHub eventData={event} />
+        </div>
       ) : activeView === 'about' ? (
         <div className="max-w-4xl mx-auto p-6 mt-8 bg-white rounded-3xl shadow-sm">
           <h2 className="text-2xl font-bold text-slate-800 mb-4">אודות המערכת</h2>
@@ -1272,12 +1304,20 @@ export default function EventPage() {
             <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
                 <h3 className="text-lg font-bold text-slate-800">מעקב מסכתות</h3>
-                <button 
-                  onClick={handleExportParticipants}
-                  className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-xl font-bold text-sm hover:bg-emerald-100 transition flex items-center gap-2"
-                >
-                  <Download className="w-4 h-4" /> הורד דוח לומדים
-                </button>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={handlePrintEmptyTable}
+                    className="bg-slate-50 text-slate-700 border border-slate-200 px-4 py-2 rounded-xl font-bold text-sm hover:bg-slate-100 transition flex items-center gap-2"
+                  >
+                    <Printer className="w-4 h-4" /> הדפס טבלה ריקה
+                  </button>
+                  <button 
+                    onClick={handleExportParticipants}
+                    className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-xl font-bold text-sm hover:bg-emerald-100 transition flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" /> הורד דוח לומדים
+                  </button>
+                </div>
               </div>
               {renderTractatesGrid(true)}
             </section>
@@ -1380,7 +1420,7 @@ export default function EventPage() {
           <div className="bg-white rounded-3xl w-full max-w-md p-6 shadow-xl flex flex-col max-h-[90vh]">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-slate-800">מסכת {selectedTractate} - בחירת פרקים</h3>
-              <button onClick={() => { setShowChaptersModal(false); setSelectedTractate(null); }} className="text-slate-400 hover:bg-slate-100 p-1.5 rounded-full"><X className="w-5 h-5" /></button>
+              <button onClick={() => { setShowChaptersModal(false); setSelectedTractate(null); setManualAssignName(""); }} className="text-slate-400 hover:bg-slate-100 p-1.5 rounded-full"><X className="w-5 h-5" /></button>
             </div>
             <div className="mb-4">
                <button onClick={selectAllAvailableChapters} className="text-sm text-blue-600 font-medium hover:underline">בחר את כל הפרקים הפנויים</button>
@@ -1398,9 +1438,29 @@ export default function EventPage() {
                 )
               })}
             </div>
-            <div className="pt-4 border-t border-slate-100">
-              <button onClick={handleTakeSelectedChapters} className="w-full bg-blue-600 text-white py-4 rounded-xl font-medium text-lg">קבלת {selectedChapters.length} פרקים בלי נדר</button>
-            </div>
+            {selectedChapters.length > 0 && (
+              <>
+                {isOrganizerRole && activeView === 'organizer' && (
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                     <label className="block text-sm font-bold text-slate-700 mb-1">הקצאה ידנית של הלומד (אופציונלי):</label>
+                     <input 
+                       type="text" 
+                       className="w-full border border-slate-200 p-3 rounded-xl bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400" 
+                       placeholder="הזן שם לומד (או השאר ריק כדי לקחת עבורך)" 
+                       value={manualAssignName} 
+                       onChange={e => setManualAssignName(e.target.value)} 
+                     />
+                  </div>
+                )}
+                <div className="pt-4 border-t border-slate-100 mt-2">
+                  <button onClick={handleTakeSelectedChapters} className="w-full bg-blue-600 text-white py-4 rounded-xl font-medium text-lg">
+                    {isOrganizerRole && activeView === 'organizer' && manualAssignName.trim() !== "" 
+                      ? `הקצה ${selectedChapters.length} פרקים ל-${manualAssignName}` 
+                      : `קבלת ${selectedChapters.length} פרקים בלי נדר`}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

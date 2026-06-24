@@ -17,16 +17,7 @@ export default function MyLearningPage() {
   const [myEvents, setMyEvents] = useState<any[]>([]);
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const profileStr = localStorage.getItem("participantProfile");
-    if (profileStr) {
-      const p = JSON.parse(profileStr);
-      setProfile(p);
-      loadUserEvents(p.phone);
-    } else {
-      setLoading(false);
-    }
-  }, []);
+  // Moving useEffect below loadUserEvents
 
   const loadUserEvents = async (phone: string) => {
     setLoading(true);
@@ -119,6 +110,17 @@ export default function MyLearningPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const profileStr = localStorage.getItem("participantProfile");
+    if (profileStr) {
+      const p = JSON.parse(profileStr);
+      setProfile(p);
+      loadUserEvents(p.phone);
+    } else {
+      setLoading(false);
+    }
+  }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();

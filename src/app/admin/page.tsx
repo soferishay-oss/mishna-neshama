@@ -9,6 +9,7 @@ import Link from "next/link";
 import { TRACTATE_CHAPTERS } from "@/lib/tractates";
 import { downloadCSV } from "@/lib/exportUtils";
 import dynamic from "next/dynamic";
+import * as mammoth from "mammoth";
 import "react-quill-new/dist/quill.snow.css";
 
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
@@ -34,7 +35,11 @@ export default function AdminPage() {
   const allPrayers = systemTexts?.customPrayers || DEFAULT_SYSTEM_TEXTS.customPrayers || [];
   const uniqueEdot = Array.from(new Set(allPrayers.map((p: any) => p.edah))) as string[];
   const [activeEdah, setActiveEdah] = useState<string>(uniqueEdot[0] || "mizrach");
-  const [adminActiveTab, setAdminActiveTab] = useState<'prayers' | 'halachot'>('prayers');
+  
+  const categories = systemTexts?.categories || [];
+  const [adminActiveCategoryId, setAdminActiveCategoryId] = useState<string>("prayers");
+  const activeCategory = categories.find((c: any) => c.id === adminActiveCategoryId) || categories[0] || null;
+
 
   useEffect(() => {
     // Check if authenticated from homepage prompt or direct visit
@@ -80,60 +85,75 @@ export default function AdminPage() {
   const migrateOldTexts = (texts: any) => {
     if (!texts) return texts;
     
-    // If it already has customPrayers, return as is
-    if (texts.customPrayers && texts.customPrayers.length > 0) {
+    // If it already has categories, return as is
+    if (texts.categories && texts.categories.length > 0) {
        return texts;
     }
 
     // Start with the full default array
-    let newPrayers = JSON.parse(JSON.stringify(DEFAULT_SYSTEM_TEXTS.customPrayers || []));
+    let migratedCategories = JSON.parse(JSON.stringify(DEFAULT_SYSTEM_TEXTS.categories || []));
     
-    const updatePrayer = (edah: string, titleKey: string, content: string) => {
-      // Only migrate if it looks like they actually changed it
-      if (!content || typeof content !== 'string' || content.trim() === '' || content.includes('מנהל המערכת ישלים')) {
-         return;
+    // Check old customPrayers
+    if (texts.customPrayers && texts.customPrayers.length > 0) {
+      const prayersCat = migratedCategories.find((c: any) => c.id === 'prayers');
+      if (prayersCat) {
+        prayersCat.items = texts.customPrayers;
       }
-      
-      // Find the corresponding default prayer and overwrite its content
-      const htmlContent = (content.includes('<p>') || content.includes('<br>')) ? content : content.replace(/\n/g, '<br/>');
-      const existing = newPrayers.find((p: any) => p.edah === edah && p.title.includes(titleKey));
-      if (existing) {
-        existing.content = htmlContent;
-      } else {
-        // If not found in defaults, add it
-        newPrayers.push({
-          id: Date.now().toString() + Math.random().toString(),
-          edah,
-          title: titleKey,
-          gender: 'both',
-          content: htmlContent
+    } else if (texts.kaddish || texts.hashkavot || texts.birkatHamazon || texts.tzidukHadin) {
+      // Very old format: migrate individual objects to items
+      const prayersCat = migratedCategories.find((c: any) => c.id === 'prayers');
+      if (prayersCat) {
+        const updatePrayer = (edah: string, titleKey: string, htmlContent: string) => {
+          const existing = prayersCat.items.find((p: any) => p.edah === edah && p.title === titleKey);
+          if (existing) {
+            existing.content = htmlContent;
+          } else {
+            prayersCat.items.push({
+              id: Date.now().toString() + Math.random().toString(),
+              edah,
+              title: titleKey,
+              gender: 'both',
+              content: htmlContent
+            });
+          }
+        };
+
+        const edot = ['mizrach', 'ashkenaz', 'teiman'];
+        edot.forEach(edah => {
+          if (texts.birkatHamazon?.[edah]) updatePrayer(edah, 'ברכת המזון', texts.birkatHamazon[edah]);
+          if (texts.tzidukHadin?.[edah]) updatePrayer(edah, 'צידוק הדין', texts.tzidukHadin[edah]);
+          if (texts.kaddish?.yatom?.[edah]) updatePrayer(edah, 'קדיש יתום', texts.kaddish.yatom[edah]);
+          if (texts.kaddish?.derabanan?.[edah]) updatePrayer(edah, 'קדיש דרבנן', texts.kaddish.derabanan[edah]);
+          
+          if (texts.hashkavot?.[edah]?.man) updatePrayer(edah, 'אשכבה', texts.hashkavot[edah].man);
+          if (texts.hashkavot?.[edah]?.woman) updatePrayer(edah, 'אשכבה', texts.hashkavot[edah].woman);
+          if (texts.hashkavot?.[edah]?.greatMan && !texts.hashkavot[edah].greatMan.includes('מנהל המערכת ישלים') && !texts.hashkavot[edah].greatMan.includes('(אשכבה לאדם גדול')) {
+             prayersCat.items.push({ id: Date.now().toString() + Math.random().toString(), edah, title: 'אשכבה לאדם גדול', gender: 'male', content: texts.hashkavot[edah].greatMan });
+          }
+          if (texts.hashkavot?.[edah]?.greatWoman && !texts.hashkavot[edah].greatWoman.includes('מנהל המערכת ישלים') && !texts.hashkavot[edah].greatWoman.includes('(אשכבה לאישה גדולה')) {
+             prayersCat.items.push({ id: Date.now().toString() + Math.random().toString(), edah, title: 'אשכבה לאישה גדולה', gender: 'female', content: texts.hashkavot[edah].greatWoman });
+          }
         });
       }
-    };
+    }
 
-    const edot = ['mizrach', 'ashkenaz', 'teiman'];
-    
-    edot.forEach(edah => {
-      if (texts.birkatHamazon?.[edah]) updatePrayer(edah, 'ברכת המזון', texts.birkatHamazon[edah]);
-      if (texts.tzidukHadin?.[edah]) updatePrayer(edah, 'צידוק הדין', texts.tzidukHadin[edah]);
-      if (texts.kaddish?.yatom?.[edah]) updatePrayer(edah, 'קדיש יתום', texts.kaddish.yatom[edah]);
-      if (texts.kaddish?.derabanan?.[edah]) updatePrayer(edah, 'קדיש דרבנן', texts.kaddish.derabanan[edah]);
-      
-      // For hashkavot, we match the default titles created earlier
-      if (texts.hashkavot?.[edah]?.man) updatePrayer(edah, 'אשכבה', texts.hashkavot[edah].man);
-      if (texts.hashkavot?.[edah]?.woman) updatePrayer(edah, 'אשכבה', texts.hashkavot[edah].woman);
-      // If they had greatMan/greatWoman, add them as new
-      if (texts.hashkavot?.[edah]?.greatMan && !texts.hashkavot[edah].greatMan.includes('מנהל המערכת ישלים') && !texts.hashkavot[edah].greatMan.includes('(אשכבה לאדם גדול')) {
-         newPrayers.push({ id: Date.now().toString() + Math.random().toString(), edah, title: 'אשכבה לאדם גדול', gender: 'male', content: texts.hashkavot[edah].greatMan });
+    // Check old customHalachot
+    if (texts.customHalachot && texts.customHalachot.length > 0) {
+      const halachotCat = migratedCategories.find((c: any) => c.id === 'halachot');
+      if (halachotCat) {
+        halachotCat.items = texts.customHalachot;
       }
-      if (texts.hashkavot?.[edah]?.greatWoman && !texts.hashkavot[edah].greatWoman.includes('מנהל המערכת ישלים') && !texts.hashkavot[edah].greatWoman.includes('(אשכבה לאישה גדולה')) {
-         newPrayers.push({ id: Date.now().toString() + Math.random().toString(), edah, title: 'אשכבה לאישה גדולה', gender: 'female', content: texts.hashkavot[edah].greatWoman });
-      }
-    });
+    }
 
     return {
       ...texts,
-      customPrayers: newPrayers
+      categories: migratedCategories,
+      customPrayers: null,
+      customHalachot: null,
+      birkatHamazon: null,
+      kaddish: null,
+      hashkavot: null,
+      tzidukHadin: null
     };
   };
 
@@ -388,10 +408,13 @@ export default function AdminPage() {
   };
   const getEdahLabel = (id: string) => EDOT_LABELS[id] || id;
 
-  const handleExportPrayersWord = () => {
-    const itemsToExport = adminActiveTab === 'halachot' 
-      ? (systemTexts.customHalachot || []).filter((h: any) => h.edah === activeEdah || h.edah === 'all')
-      : allPrayers.filter((p: any) => p.edah === activeEdah);
+    const handleExportCategoryWord = (categoryId: string) => {
+    const cat = categories.find((c: any) => c.id === categoryId);
+    if (!cat) return;
+    
+    const itemsToExport = cat.items.filter((p: any) => 
+      !cat.hasEdot ? true : (p.edah === activeEdah || p.edah === 'all')
+    );
       
     const itemsHtml = itemsToExport.map((p: any) => `
       <div style="font-family: Arial, sans-serif; text-align: right; direction: rtl; margin-bottom: 30px;">
@@ -407,8 +430,10 @@ export default function AdminPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `תפילות_נוסח_${getEdahLabel(activeEdah)}.doc`;
+    a.download = `${cat.name}${cat.hasEdot ? '_' + getEdahLabel(activeEdah) : ''}.doc`;
+    document.body.appendChild(a);
     a.click();
+    document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
@@ -548,182 +573,164 @@ export default function AdminPage() {
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <h2 className="text-xl font-bold flex items-center gap-2">
               <BarChart3 className="w-6 h-6 text-slate-400" />
-              עריכת טקסטים, עזרים והלכות
+              עריכת נושאים, תפילות ותוכן
             </h2>
-            <button 
-              onClick={handleExportPrayersWord}
-              className="bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition"
-            >
-              <Download className="w-4 h-4" /> ייצוא {adminActiveTab === 'halachot' ? 'הלכות' : 'תפילות'} {getEdahLabel(activeEdah)} לוורד
-            </button>
-          </div>
-
-          <div className="flex bg-slate-100 p-1 rounded-xl mb-6 w-max">
-            <button 
-              onClick={() => setAdminActiveTab('prayers')}
-              className={`px-6 py-2 rounded-lg font-bold transition-all ${adminActiveTab === 'prayers' ? 'bg-white shadow text-blue-700' : 'text-slate-600 hover:text-slate-800'}`}
-            >
-              תפילות אישיות
-            </button>
-            <button 
-              onClick={() => setAdminActiveTab('halachot')}
-              className={`px-6 py-2 rounded-lg font-bold transition-all ${adminActiveTab === 'halachot' ? 'bg-white shadow text-blue-700' : 'text-slate-600 hover:text-slate-800'}`}
-            >
-              הלכות ומנהגים
-            </button>
-          </div>
-          
-          <div className="flex flex-wrap border-b mb-6 gap-2">
-            {uniqueEdot.map((edah) => (
+            <div className="flex gap-2">
               <button 
-                key={edah}
-                className={`py-3 px-6 font-bold transition-colors \${activeEdah === edah ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
-                onClick={() => setActiveEdah(edah)}
+                onClick={handleAddCategory}
+                className="bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition"
               >
-                נוסח {getEdahLabel(edah)}
-              </button>
-            ))}
-            <button 
-              className="py-3 px-4 text-sm text-blue-600 font-bold hover:bg-blue-50 transition rounded-t-lg flex items-center gap-1 mr-auto"
-              onClick={() => {
-                const newEdah = prompt("הכנס שם נוסח חדש:");
-                if (newEdah) {
-                  setActiveEdah(newEdah);
-                  const newPrayer = { id: Date.now().toString(), edah: newEdah, title: "כותרת חדשה", content: "תוכן...", gender: "both" };
-                  setSystemTexts((prev: any) => ({ ...prev, customPrayers: [...(prev.customPrayers || []), newPrayer] }));
-                }
-              }}
-            >
-              <PlusCircle className="w-4 h-4"/> נוסח חדש
-            </button>
-            {uniqueEdot.length > 1 && (
-              <button 
-                className="py-3 px-4 text-sm text-red-600 font-bold hover:bg-red-50 transition rounded-t-lg flex items-center gap-1"
-                onClick={() => {
-                  if (confirm(`האם אתה בטוח שברצונך למחוק לחלוטין את נוסח ${getEdahLabel(activeEdah)} על כל תפילותיו?`)) {
-                    const newPrayers = (systemTexts.customPrayers || []).filter((p: any) => p.edah !== activeEdah);
-                    setSystemTexts((prev: any) => ({ ...prev, customPrayers: newPrayers }));
-                    setActiveEdah(uniqueEdot.find(e => e !== activeEdah) || "mizrach");
-                  }
-                }}
-              >
-                <Trash2 className="w-4 h-4"/> מחק נוסח זה
-              </button>
-            )}
-          </div>
-          
-          {adminActiveTab === 'prayers' ? (
-            <div className="space-y-6">
-              {(systemTexts.customPrayers || DEFAULT_SYSTEM_TEXTS.customPrayers || []).filter((p: any) => p.edah === activeEdah).map((prayer: any) => (
-                <div key={prayer.id} className="bg-slate-50 p-6 rounded-2xl border border-slate-200 relative">
-                  <button 
-                    onClick={() => handleDeletePrayer(prayer.id)} 
-                    className="absolute top-4 left-4 text-red-400 hover:text-red-600 bg-red-50 p-2 rounded-xl transition"
-                    title="מחק טקסט"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pr-12 md:pr-0">
-                    <div>
-                      <label className="block text-sm font-bold text-slate-600 mb-1">כותרת (לדוגמה: אשכבה, קדיש יתום, אל מלא רחמים)</label>
-                      <input 
-                        type="text" 
-                        className="w-full border border-slate-200 rounded-xl p-3 font-bold" 
-                        value={prayer.title} 
-                        onChange={e => handleUpdatePrayer(prayer.id, 'title', e.target.value)} 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-slate-600 mb-1">מיועד עבור (מגדר)</label>
-                      <select 
-                        className="w-full border border-slate-200 rounded-xl p-3 bg-white"
-                        value={prayer.gender}
-                        onChange={e => handleUpdatePrayer(prayer.id, 'gender', e.target.value)}
-                      >
-                        <option value="both">לשני המינים (יוצג תמיד)</option>
-                        <option value="male">לגבר בלבד (יוצג אם הנפטר איש)</option>
-                        <option value="female">לאישה בלבד (יוצג אם הנפטרת אישה)</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-600 mb-1">תוכן הטקסט (השתמש ב- 'פלוני בן פלוני' או 'פלונית בת פלונית' והם יוחלפו אוטומטית בשם הנפטר/ת)</label>
-                    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white" dir="rtl">
-                      <style>{`.ql-editor { text-align: right !important; direction: rtl !important; font-family: inherit; font-size: 1.125rem; }`}</style>
-                      <ReactQuill 
-                        theme="snow"
-                        value={prayer.content || ""}
-                        onChange={(content) => handleUpdatePrayer(prayer.id, 'content', content)}
-                        modules={QUILL_MODULES}
-                        className="font-serif text-right"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              <button 
-                onClick={handleAddPrayer} 
-                className="w-full py-4 border-2 border-dashed border-blue-300 rounded-2xl text-blue-600 font-bold hover:bg-blue-50 hover:border-blue-400 transition flex justify-center items-center gap-2"
-              >
-                <PlusCircle className="w-5 h-5" /> הוסף קטע תפילה חדש לנוסח {getEdahLabel(activeEdah)}
+                <PlusCircle className="w-4 h-4" /> נושא חדש
               </button>
             </div>
-          ) : (
-            <div className="space-y-6">
-              {(systemTexts.customHalachot || []).filter((h: any) => h.edah === activeEdah || h.edah === 'all').map((halacha: any) => (
-                <div key={halacha.id} className="bg-slate-50 p-6 rounded-2xl border border-slate-200 relative">
-                  <button 
-                    onClick={() => handleDeleteHalacha(halacha.id)} 
-                    className="absolute top-4 left-4 text-red-400 hover:text-red-600 bg-red-50 p-2 rounded-xl transition"
-                    title="מחק הלכה"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pr-12 md:pr-0">
-                    <div>
-                      <label className="block text-sm font-bold text-slate-600 mb-1">כותרת ההלכה (לדוגמה: דיני סעודת הבראה)</label>
-                      <input 
-                        type="text" 
-                        className="w-full border border-slate-200 rounded-xl p-3 font-bold" 
-                        value={halacha.title} 
-                        onChange={e => handleUpdateHalacha(halacha.id, 'title', e.target.value)} 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-bold text-slate-600 mb-1">שייכות הלכה זו (עדה)</label>
-                      <select 
-                        className="w-full border border-slate-200 rounded-xl p-3 bg-white"
-                        value={halacha.edah}
-                        onChange={e => handleUpdateHalacha(halacha.id, 'edah', e.target.value)}
-                      >
-                        <option value="all">רלוונטי לכל העדות (יוצג תמיד)</option>
-                        {uniqueEdot.map(e => <option key={e} value={e}>רק לנוסח {getEdahLabel(e)}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-600 mb-1">תוכן ההלכה</label>
-                    <div className="border border-slate-200 rounded-xl overflow-hidden bg-white" dir="rtl">
-                      <style>{`.ql-editor { text-align: right !important; direction: rtl !important; font-family: inherit; font-size: 1.125rem; }`}</style>
-                      <ReactQuill 
-                        theme="snow"
-                        value={halacha.content || ""}
-                        onChange={(content) => handleUpdateHalacha(halacha.id, 'content', content)}
-                        modules={QUILL_MODULES}
-                        className="font-serif text-right"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-6">
+            {categories.map((cat: any) => (
               <button 
-                onClick={handleAddHalacha} 
-                className="w-full py-4 border-2 border-dashed border-blue-300 rounded-2xl text-blue-600 font-bold hover:bg-blue-50 hover:border-blue-400 transition flex justify-center items-center gap-2"
+                key={cat.id}
+                onClick={() => setAdminActiveCategoryId(cat.id)}
+                className={`px-6 py-2 rounded-lg font-bold transition-all ${adminActiveCategoryId === cat.id ? 'bg-blue-600 shadow text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
               >
-                <PlusCircle className="w-5 h-5" /> הוסף הלכה חדשה
+                {cat.name}
               </button>
+            ))}
+          </div>
+          
+          {activeCategory && (
+            <div className="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+              <div className="flex justify-between items-center mb-6 border-b border-slate-200 pb-4">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-xl font-bold text-blue-900">{activeCategory.name}</h3>
+                  {activeCategory.id !== 'prayers' && activeCategory.id !== 'halachot' && (
+                    <button onClick={() => handleDeleteCategory(activeCategory.id)} className="text-red-500 hover:text-red-700 text-sm flex items-center gap-1">
+                      <Trash2 className="w-4 h-4"/> מחיקת נושא
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <label className="bg-emerald-50 cursor-pointer text-emerald-700 border border-emerald-200 hover:bg-emerald-100 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition">
+                    <PlusCircle className="w-4 h-4" /> ייבוא מ-Word
+                    <input type="file" accept=".docx" className="hidden" onChange={(e) => handleImportWord(e, activeCategory.id)} />
+                  </label>
+                  <button 
+                    onClick={() => handleExportCategoryWord(activeCategory.id)}
+                    className="bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition"
+                  >
+                    <Download className="w-4 h-4" /> ייצוא לוורד
+                  </button>
+                </div>
+              </div>
+
+              {activeCategory.hasEdot && (
+                <div className="flex flex-wrap border-b mb-6 gap-2">
+                  {uniqueEdot.map((edah: string) => (
+                    <button 
+                      key={edah}
+                      className={`py-3 px-6 font-bold transition-colors ${activeEdah === edah ? 'border-b-2 border-blue-600 text-blue-600' : 'text-slate-500 hover:text-slate-800'}`}
+                      onClick={() => setActiveEdah(edah)}
+                    >
+                      נוסח {getEdahLabel(edah)}
+                    </button>
+                  ))}
+                  <button 
+                    className="py-3 px-4 text-sm text-blue-600 font-bold hover:bg-slate-100 transition rounded-t-lg flex items-center gap-1"
+                    onClick={() => {
+                      const newEdahName = prompt("הכנס שם לעדה / נוסח חדש:");
+                      if (!newEdahName) return;
+                      // Just add a dummy prayer for this edah so it registers in uniqueEdot
+                      const newId = Date.now().toString();
+                      setSystemTexts((prev: any) => ({
+                        ...prev,
+                        categories: prev.categories.map((c: any) => {
+                          if (c.id === 'prayers') {
+                            return {
+                              ...c,
+                              items: [...(c.items || []), { id: newId, edah: newEdahName, title: "תפילה חדשה", content: "...", gender: "both" }]
+                            };
+                          }
+                          return c;
+                        })
+                      }));
+                      setActiveEdah(newEdahName);
+                    }}
+                  >
+                    <PlusCircle className="w-4 h-4"/> הוסף נוסח חדש
+                  </button>
+                </div>
+              )}
+
+              <div className="space-y-6">
+                {(activeCategory.items || []).filter((item: any) => !activeCategory.hasEdot ? true : (item.edah === activeEdah || item.edah === 'all')).map((item: any) => (
+                  <div key={item.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 relative">
+                    <button 
+                      onClick={() => handleDeleteItem(activeCategory.id, item.id)} 
+                      className="absolute top-4 left-4 text-red-400 hover:text-red-600 bg-red-50 p-2 rounded-xl transition"
+                      title="מחק פריט"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 pr-12 md:pr-0">
+                      <div>
+                        <label className="block text-sm font-bold text-slate-600 mb-1">כותרת</label>
+                        <input 
+                          type="text" 
+                          className="w-full border border-slate-200 rounded-xl p-3 font-bold" 
+                          value={item.title} 
+                          onChange={e => handleUpdateItem(activeCategory.id, item.id, 'title', e.target.value)} 
+                        />
+                      </div>
+                      <div className="flex gap-4">
+                        {activeCategory.hasEdot && (
+                          <div className="w-1/2">
+                            <label className="block text-sm font-bold text-slate-600 mb-1">נוסח / עדה</label>
+                            <select 
+                              className="w-full border border-slate-200 rounded-xl p-3 bg-white"
+                              value={item.edah}
+                              onChange={e => handleUpdateItem(activeCategory.id, item.id, 'edah', e.target.value)}
+                            >
+                              <option value="all">לכל העדות והנוסחים</option>
+                              {uniqueEdot.map((e: string) => <option key={e} value={e}>נוסח {getEdahLabel(e)}</option>)}
+                            </select>
+                          </div>
+                        )}
+                        <div className={activeCategory.hasEdot ? "w-1/2" : "w-full"}>
+                          <label className="block text-sm font-bold text-slate-600 mb-1">מיועד למין</label>
+                          <select 
+                            className="w-full border border-slate-200 rounded-xl p-3 bg-white"
+                            value={item.gender}
+                            onChange={e => handleUpdateItem(activeCategory.id, item.id, 'gender', e.target.value)}
+                          >
+                            <option value="both">לגברים ולנשים כאחד</option>
+                            <option value="male">לגברים בלבד (כמו אשכבה לאיש)</option>
+                            <option value="female">לנשים בלבד (כמו אשכבה לאישה)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-600 mb-1">תוכן הטקסט</label>
+                      <div className="border border-slate-200 rounded-xl overflow-hidden bg-white" dir="rtl">
+                        <style>{`.ql-editor { text-align: right !important; direction: rtl !important; font-family: inherit; font-size: 1.125rem; }`}</style>
+                        <ReactQuill 
+                          theme="snow"
+                          value={item.content || ""}
+                          onChange={(content) => handleUpdateItem(activeCategory.id, item.id, 'content', content)}
+                          modules={QUILL_MODULES}
+                          className="font-serif text-right"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                <button 
+                  onClick={() => handleAddItem(activeCategory.id)} 
+                  className="w-full py-4 border-2 border-dashed border-blue-300 rounded-2xl text-blue-600 font-bold hover:bg-blue-50 hover:border-blue-400 transition flex justify-center items-center gap-2 bg-white"
+                >
+                  <PlusCircle className="w-5 h-5" /> הוסף פריט חדש ל{activeCategory.name}
+                </button>
+              </div>
             </div>
           )}
         </section>

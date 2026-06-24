@@ -91,9 +91,14 @@ function HomePageContent() {
               כניסת מארגן לאירוע קיים
             </button>
 
+            <Link href="/notice" className="flex items-center justify-center w-full bg-slate-800 text-white py-4 px-6 rounded-2xl font-medium text-lg hover:bg-slate-700 transition-all shadow-sm active:scale-[0.98] mt-4">
+              <BookOpen className="ml-2 w-6 h-6 text-slate-300" />
+              עיצוב מודעת אבל
+            </Link>
+
             <Link href="/tools" className="flex items-center justify-center w-full bg-teal-50 text-teal-700 py-4 px-6 rounded-2xl font-medium text-lg hover:bg-teal-100 border border-teal-200 transition-all shadow-sm active:scale-[0.98] mt-4">
               <Heart className="ml-2 w-6 h-6 text-teal-500" />
-              עזרים לאבלים ולמנחמים
+              מאגר תפילות ותוכן
             </Link>
 
             <Link href="/my-learning" className="flex items-center justify-center w-full bg-amber-50 text-amber-700 py-4 px-6 rounded-2xl font-bold text-lg hover:bg-amber-100 border border-amber-200 transition-all shadow-sm active:scale-[0.98] mt-4">

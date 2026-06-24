@@ -20,10 +20,60 @@ const HEBREW_MONTHS_LEAP = [
   { he: "תשרי", en: "Tishrei" }, { he: "חשוון", en: "Cheshvan" }, { he: "כסלו", en: "Kislev" },
   { he: "טבת", en: "Tevet" }, { he: "שבט", en: "Sh'vat" }, { he: "אדר א'", en: "Adar I" }, { he: "אדר ב'", en: "Adar II" },
   { he: "ניסן", en: "Nisan" }, { he: "אייר", en: "Iyyar" }, { he: "סיוון", en: "Sivan" },
-  { he: "תמוז", en: "Tamuz" }, { he: "אב", en: "Av" }, { he: "אלול", en: "Elul" },
+  { he: "תמוז", en: "Tamuz" },  { he: "אב", en: "Av" },
+  { he: "אלול", en: "Elul" },
 ];
 
 const HEBREW_DAYS = Array.from({length: 30}, (_, i) => i + 1);
+
+const HebrewDateSelector = ({ value, onChange, label, years }: any) => {
+  const isLeap = HDate.isLeapYear(value.year);
+  const months = isLeap ? HEBREW_MONTHS_LEAP : HEBREW_MONTHS_REGULAR;
+  
+  // Safety check: if month is Adar I/II but year is not leap, fallback to Adar
+  if (!isLeap && (value.month === "Adar I" || value.month === "Adar II")) {
+    setTimeout(() => onChange({ ...value, month: "Adar" }), 0);
+  }
+  // Safety check: if month is Adar but year is leap, fallback to Adar I
+  if (isLeap && value.month === "Adar") {
+    setTimeout(() => onChange({ ...value, month: "Adar I" }), 0);
+  }
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
+      <div className="flex gap-2" dir="rtl">
+        <select 
+          className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          value={value.day}
+          onChange={(e) => onChange({ ...value, day: parseInt(e.target.value) })}
+        >
+          {HEBREW_DAYS.map(d => (
+            <option key={d} value={d}>{gematriya(d)}</option>
+          ))}
+        </select>
+        <select 
+          className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          value={value.month}
+          onChange={(e) => onChange({ ...value, month: e.target.value })}
+        >
+          {months.map(m => (
+            <option key={m.en} value={m.en}>{m.he}</option>
+          ))}
+        </select>
+        <select 
+          className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          value={value.year}
+          onChange={(e) => onChange({ ...value, year: parseInt(e.target.value) })}
+        >
+          {years.map((y: number) => (
+            <option key={y} value={y}>{gematriya(y)}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+  );
+};
 
 function CreateEvent() {
   const router = useRouter();
@@ -202,54 +252,7 @@ function CreateEvent() {
 
   const years = Array.from({ length: 23 }, (_, i) => currentYear - 2 + i);
 
-  const HebrewDateSelector = ({ value, onChange, label }: any) => {
-    const isLeap = HDate.isLeapYear(value.year);
-    const months = isLeap ? HEBREW_MONTHS_LEAP : HEBREW_MONTHS_REGULAR;
-    
-    // Safety check: if month is Adar I/II but year is not leap, fallback to Adar
-    if (!isLeap && (value.month === "Adar I" || value.month === "Adar II")) {
-      setTimeout(() => onChange({ ...value, month: "Adar" }), 0);
-    }
-    // Safety check: if month is Adar but year is leap, fallback to Adar I
-    if (isLeap && value.month === "Adar") {
-      setTimeout(() => onChange({ ...value, month: "Adar I" }), 0);
-    }
-
-    return (
-      <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-        <div className="flex gap-2" dir="rtl">
-          <select 
-            className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            value={value.day}
-            onChange={(e) => onChange({ ...value, day: parseInt(e.target.value) })}
-          >
-            {HEBREW_DAYS.map(d => (
-              <option key={d} value={d}>{gematriya(d)}</option>
-            ))}
-          </select>
-          <select 
-            className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            value={value.month}
-            onChange={(e) => onChange({ ...value, month: e.target.value })}
-          >
-            {months.map(m => (
-              <option key={m.en} value={m.en}>{m.he}</option>
-            ))}
-          </select>
-          <select 
-            className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            value={value.year}
-            onChange={(e) => onChange({ ...value, year: parseInt(e.target.value) })}
-          >
-            {years.map(y => (
-              <option key={y} value={y}>{gematriya(y)}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-    );
-  };
+  // HebrewDateSelector moved outside
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col pb-10">
@@ -384,11 +387,13 @@ function CreateEvent() {
                   label="תאריך פטירה עברי"
                   value={hebPassingDate}
                   onChange={setHebPassingDate}
+                  years={years}
                 />
                 <HebrewDateSelector 
                   label="תאריך קבורה עברי"
                   value={hebBurialDate}
                   onChange={setHebBurialDate}
+                  years={years}
                 />
               </div>
             ) : (

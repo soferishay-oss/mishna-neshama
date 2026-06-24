@@ -47,7 +47,7 @@ export default function ToolsPage() {
       </header>
       
       <main className="flex-1 p-4 md:p-6 max-w-5xl mx-auto w-full">
-        <AdditionsHub eventData={null} systemTexts={{ customPrayers: systemTexts?.customPrayers }} />
+        <AdditionsHub eventData={null} systemTexts={systemTexts} />
       </main>
     </div>
   );

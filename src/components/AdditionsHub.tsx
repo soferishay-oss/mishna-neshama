@@ -362,8 +362,8 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
                         </div>
                         
                         {noticeData.showFuneral && (
-                          <div className={`text-lg md:text-xl lg:text-2xl ${printSizes.funeralInfo} print:leading-normal whitespace-pre-wrap`}>
-                            ההלוויה <span className="font-bold">{noticeData.funeralText}</span>
+                          <div className={`text-lg md:text-xl lg:text-2xl ${printSizes.funeralInfo} print:leading-normal whitespace-pre-wrap font-bold`}>
+                            ההלוויה {noticeData.funeralText}
                           </div>
                         )}
                         

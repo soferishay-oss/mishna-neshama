@@ -11,6 +11,13 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
   const [activeEdah, setActiveEdah] = useState<string | null>(null);
   const [activeItemId, setActiveItemId] = useState<string | null>(null);
   
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedNusach = localStorage.getItem('preferredNusach');
+      if (savedNusach) setActiveEdah(savedNusach);
+    }
+  }, []);
+
   const itemRefs = useRef<{[key: string]: HTMLDivElement | null}>({});
 
   useEffect(() => {
@@ -92,7 +99,10 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
             {uniqueEdot.map(edah => (
               <button 
                 key={edah}
-                onClick={() => setActiveEdah(edah)}
+                onClick={() => {
+                  setActiveEdah(edah);
+                  if (typeof window !== 'undefined') localStorage.setItem('preferredNusach', edah);
+                }}
                 className="w-full bg-white border-2 border-slate-100 hover:border-blue-400 p-5 rounded-2xl text-lg font-bold text-slate-700 hover:bg-blue-50 transition shadow-sm active:scale-[0.98]"
               >
                 {getEdahLabel(edah)}
@@ -120,19 +130,20 @@ export default function AdditionsHub({ eventData, systemTexts }: { eventData: an
     <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
       <div className="bg-slate-50 border-b p-4 flex justify-between items-center sticky top-0 z-10">
          <button 
-           onClick={() => {
-             if (activeCategory.hasEdot) setActiveEdah(null);
-             else setActiveCategoryId(null);
-           }} 
+           onClick={() => setActiveCategoryId(null)} 
            className="text-slate-500 hover:text-slate-800 flex items-center gap-1 font-bold text-sm bg-white border px-3 py-1.5 rounded-lg shadow-sm"
          >
-           <ArrowRight className="w-4 h-4" /> חזור
+           <ArrowRight className="w-4 h-4" /> חזור לנושאים
          </button>
-         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+         <h2 className="text-xl font-bold text-slate-800 flex flex-col items-center">
            {activeCategory.name}
-           {activeCategory.hasEdot && <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-bold ml-2">נוסח {getEdahLabel(activeEdah as string)}</span>}
+           {activeCategory.hasEdot && (
+             <button onClick={() => setActiveEdah(null)} className="text-xs text-blue-600 hover:text-blue-800 font-normal mt-1 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+               נוסח: {getEdahLabel(activeEdah || '')} (לשינוי)
+             </button>
+           )}
          </h2>
-         <div className="w-20"></div> {/* spacer */}
+         <div className="w-20"></div> {/* spacer to balance header */}
       </div>
       
       <div className="p-4 md:p-6 overflow-y-auto flex-1 bg-slate-50/50">

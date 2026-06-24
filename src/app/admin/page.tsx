@@ -671,6 +671,14 @@ export default function AdminPage() {
                     onChange={e => setSystemTexts({...systemTexts, shareTemplates: { ...systemTexts.shareTemplates, generalStatus: e.target.value }})} 
                   />
                 </div>
+                <div>
+                  <label className="block text-sm font-bold text-slate-600 mb-1">תזכורת למשתתף שמתמהמה</label>
+                  <textarea 
+                    className="w-full border rounded-xl p-3 min-h-[80px] font-sans" 
+                    value={systemTexts.shareTemplates?.reminderMessage || DEFAULT_SYSTEM_TEXTS.shareTemplates.reminderMessage} 
+                    onChange={e => setSystemTexts({...systemTexts, shareTemplates: { ...systemTexts.shareTemplates, reminderMessage: e.target.value }})} 
+                  />
+                </div>
               </div>
             </div>
         </section>

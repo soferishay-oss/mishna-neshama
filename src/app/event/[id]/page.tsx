@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, Fragment } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ref, onValue, update, remove, get } from "firebase/database";
 import { db, isMockMode } from "@/lib/firebase";
@@ -890,9 +890,12 @@ export default function EventPage() {
           return;
       }
       const daysText = daysRemaining !== null && daysRemaining >= 0 ? `נותרו ${daysRemaining} ימים` : "תאריך היעד עבר";
-      const title = event?.deceasedTitle ? ` ${event.deceasedTitle}` : ' ז"ל';
-      const text = `שלום ${name},\n${daysText} ללימוד המשניות לעילוי נשמת ${event?.deceasedName}${title}.\nנותרו לך עדיין פרקים שטרם סומנו כהושלמו.\nאנא הכנס לקישור, וסמן את הפרקים שלמדת כ"הושלמו" כדי שנוכל לחגוג את הסיום.\n${window.location.href}`;
       const cleanPhone = phone.replace(/\D/g, ''); 
+      const tmpl = systemTexts?.shareTemplates?.reminderMessage || DEFAULT_SYSTEM_TEXTS.shareTemplates.reminderMessage;
+      let text = replacePlaceholders(tmpl);
+      // We manually add the user's name if not supported
+      text = `שלום ${name},\n${text}`;
+      
       window.open(`https://wa.me/972${cleanPhone.startsWith('0') ? cleanPhone.substring(1) : cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
@@ -1405,7 +1408,7 @@ export default function EventPage() {
                   </thead>
                   <tbody>
                     {SEDARIM.map((seder) => (
-                      <React.Fragment key={seder.name}>
+                      <Fragment key={seder.name}>
                         <tr className="bg-amber-50">
                           <td colSpan={3} className="p-2 font-bold text-amber-800">{seder.name}</td>
                         </tr>
@@ -1457,7 +1460,7 @@ export default function EventPage() {
                              );
                            });
                         })}
-                      </React.Fragment>
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>

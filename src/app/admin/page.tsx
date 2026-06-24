@@ -389,8 +389,11 @@ export default function AdminPage() {
   const getEdahLabel = (id: string) => EDOT_LABELS[id] || id;
 
   const handleExportPrayersWord = () => {
-    // Generate simple HTML format that Word understands
-    const prayersHtml = allPrayers.filter((p: any) => p.edah === activeEdah).map((p: any) => `
+    const itemsToExport = adminActiveTab === 'halachot' 
+      ? (systemTexts.customHalachot || []).filter((h: any) => h.edah === activeEdah || h.edah === 'all')
+      : allPrayers.filter((p: any) => p.edah === activeEdah);
+      
+    const itemsHtml = itemsToExport.map((p: any) => `
       <div style="font-family: Arial, sans-serif; text-align: right; direction: rtl; margin-bottom: 30px;">
         <h2 style="color: #1e3a8a;">${p.title}</h2>
         <p style="font-size: 14pt; line-height: 1.8;">${p.content}</p>
@@ -398,7 +401,7 @@ export default function AdminPage() {
     `).join("<hr/>");
     
     const html = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-      <head><meta charset='utf-8'><title>Export</title></head><body>${prayersHtml}</body></html>`;
+      <head><meta charset='utf-8'><title>Export</title></head><body>${itemsHtml}</body></html>`;
       
     const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
     const url = URL.createObjectURL(blob);
@@ -551,7 +554,7 @@ export default function AdminPage() {
               onClick={handleExportPrayersWord}
               className="bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 px-4 py-2 rounded-xl font-bold text-sm flex items-center gap-2 transition"
             >
-              <Download className="w-4 h-4" /> ייצוא תפילות {getEdahLabel(activeEdah)} לוורד
+              <Download className="w-4 h-4" /> ייצוא {adminActiveTab === 'halachot' ? 'הלכות' : 'תפילות'} {getEdahLabel(activeEdah)} לוורד
             </button>
           </div>
 
@@ -717,7 +720,7 @@ export default function AdminPage() {
               
               <button 
                 onClick={handleAddHalacha} 
-                className="w-full py-4 border-2 border-dashed border-emerald-300 rounded-2xl text-emerald-600 font-bold hover:bg-emerald-50 hover:border-emerald-400 transition flex justify-center items-center gap-2"
+                className="w-full py-4 border-2 border-dashed border-blue-300 rounded-2xl text-blue-600 font-bold hover:bg-blue-50 hover:border-blue-400 transition flex justify-center items-center gap-2"
               >
                 <PlusCircle className="w-5 h-5" /> הוסף הלכה חדשה
               </button>

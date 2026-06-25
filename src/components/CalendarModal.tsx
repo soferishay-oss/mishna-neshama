@@ -82,18 +82,21 @@ END:VCALENDAR`;
     let eventName = "";
     let rrule = "";
 
+    const deceasedNameText = `${event.deceasedTitle ? event.deceasedTitle + ' ' : ''}${event.deceasedName}`;
+
     if (reminderType === '1week') {
       eventDate.setDate(eventDate.getDate() - 7);
-      eventName = `נותר שבוע לסיום מסכת ${tractate} - ${event.deceasedName}`;
+      eventName = `נותר שבוע לסיום מסכת ${tractate} לע"נ ${deceasedNameText}`;
     } else if (reminderType === '3days') {
       eventDate.setDate(eventDate.getDate() - 3);
-      eventName = `נותרו 3 ימים לסיום מסכת ${tractate} - ${event.deceasedName}`;
+      eventName = `נותרו 3 ימים לסיום מסכת ${tractate} לע"נ ${deceasedNameText}`;
     } else if (reminderType === '1day') {
       eventDate.setDate(eventDate.getDate() - 1);
-      eventName = `מחר יעד סיום מסכת ${tractate} - ${event.deceasedName}`;
+      eventName = `מחר יעד סיום מסכת ${tractate} לע"נ ${deceasedNameText}`;
     } else if (reminderType === 'recurring') {
       eventDate = new Date(); // start today
-      eventName = `תזכורת ללימוד מסכת ${tractate} לעילוי נשמת ${event.deceasedName} עד יום היעד`;
+      const hebrewTarget = event.shloshimDateHebrew || event.yahrzeitDateHebrew || "";
+      eventName = `תזכורת ללימוד מסכת ${tractate} לעילוי נשמת ${deceasedNameText} עד ${hebrewTarget}`;
       const untilDate = new Date(finalTargetDate);
       untilDate.setDate(untilDate.getDate() + 1);
       const dtendRecur = untilDate.toISOString().replace(/[-:]/g, '').substring(0,8);
@@ -106,7 +109,7 @@ END:VCALENDAR`;
     endDate.setDate(endDate.getDate() + 1);
     const dtend = endDate.toISOString().replace(/[-:]/g, '').substring(0,8);
     
-    const description = `תזכורת ללימוד מסכת ${tractate} לעילוי נשמת ${event.deceasedTitle ? event.deceasedTitle + ' ' : ''}${event.deceasedName}.\\n\\nקישור ללימוד:\\n${window.location.origin}/event/${eventId}`;
+    const description = `תזכורת ללימוד מסכת ${tractate} לעילוי נשמת ${deceasedNameText}.\n\nקישור ללימוד:\n${window.location.origin}/event/${eventId}`;
 
     const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventName)}&dates=${dtstart}/${dtend}&details=${encodeURIComponent(description)}${rrule}`;
     window.open(url, '_blank');

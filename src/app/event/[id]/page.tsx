@@ -577,7 +577,7 @@ export default function EventPage() {
     }
   };
 
-  const replacePlaceholders = (template: string) => {
+  const replacePlaceholders = (template: string, pName?: string) => {
     const title = event?.deceasedTitle ? ` ${event?.deceasedTitle}` : '';
     const eventName = `${event?.deceasedName || ""}${title}`;
     
@@ -597,7 +597,9 @@ export default function EventPage() {
       .replace(/{left}/g, left.toString())
       .replace(/{taken}/g, takenChapters.toString())
       .replace(/{total}/g, totalChapters.toString())
-      .replace(/{percent}/g, percent.toString());
+      .replace(/{percent}/g, percent.toString())
+      .replace(/{participant_name}/g, pName || "")
+      .replace(/{{participantName}}/g, pName || "");
   };
 
   const copyLink = () => {
@@ -998,9 +1000,11 @@ export default function EventPage() {
       const daysText = daysRemaining !== null && daysRemaining >= 0 ? `נותרו ${daysRemaining} ימים` : "תאריך היעד עבר";
       const cleanPhone = phone.replace(/\D/g, ''); 
       const tmpl = systemTexts?.shareTemplates?.reminderMessage || DEFAULT_SYSTEM_TEXTS.shareTemplates.reminderMessage;
-      let text = replacePlaceholders(tmpl);
-      // We manually add the user's name if not supported
-      text = `שלום ${name},\n${text}`;
+      let text = replacePlaceholders(tmpl, name);
+      // We manually add the user's name if the template doesn't support placeholders
+      if (!tmpl.includes("{participant_name}") && !tmpl.includes("{{participantName}}")) {
+          text = `שלום ${name},\n${text}`;
+      }
       
       window.open(`https://wa.me/972${cleanPhone.startsWith('0') ? cleanPhone.substring(1) : cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
   };

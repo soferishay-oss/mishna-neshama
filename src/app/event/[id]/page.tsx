@@ -894,38 +894,49 @@ export default function EventPage() {
     });
   });
 
-  const myLearningRows: Array<{ tractate: string, nextChapterToLearn: number | null, nextMishnahLabel: string, completedCount: number, totalOwned: number }> = [];
+  const myLearningRows: Array<{ 
+    tractate: string, 
+    nextChapterToLearn: number | null, 
+    nextMishnahLabel: string, 
+    completedCount: number, 
+    totalOwned: number,
+    uncompletedChapters: number[]
+  }> = [];
   
   if (participantProfile?.name) {
     Object.keys(tractatesData).forEach(t => {
-      const chapters = tractatesData[t]?.chapters || {};
-      const ownedChapters: number[] = [];
-      let completedCount = 0;
+      const chapters = tractatesData[t]?.chapters;
+      if (!chapters) return;
       
-      Object.keys(chapters).forEach(ch => {
-        if (chapters[ch].takerName === participantProfile.name && chapters[ch].takerPhone === participantProfile.phone) {
-          const chNum = parseInt(ch, 10);
-          ownedChapters.push(chNum);
-          if (chapters[ch].isCompleted) {
-            completedCount++;
-          }
+      const ownedChapters: number[] = [];
+      Object.keys(chapters).forEach(chIdxStr => {
+        const chIdx = parseInt(chIdxStr, 10);
+        if (chapters[chIdx].takerName === participantProfile.name && chapters[chIdx].takerPhone === participantProfile.phone) {
+          ownedChapters.push(chIdx);
         }
       });
       
       if (ownedChapters.length > 0) {
-        ownedChapters.sort((a, b) => a - b);
-        let nextChapterToLearn = null;
+        ownedChapters.sort((a,b) => a - b);
+        let completedCount = 0;
+        const uncompletedChapters: number[] = [];
+        
+        ownedChapters.forEach(ch => {
+          if (chapters[ch].isCompleted) {
+            completedCount++;
+          } else {
+            uncompletedChapters.push(ch);
+          }
+        });
+        
+        let nextChapterToLearn = uncompletedChapters.length > 0 ? uncompletedChapters[0] : null;
         let nextMishnahLabel = "";
-        for (const ch of ownedChapters) {
-          if (!chapters[ch].isCompleted) {
-            nextChapterToLearn = ch;
-            const bookmarkKey = `bookmark_${id}_${t}_${ch}`;
-            const savedIndexStr = typeof window !== 'undefined' ? localStorage.getItem(bookmarkKey) : null;
-            if (savedIndexStr !== null) {
-              const savedIndex = parseInt(savedIndexStr, 10);
-              nextMishnahLabel = ` משנה ${getHebrewChapter(savedIndex + 1)}`;
-            }
-            break;
+        if (nextChapterToLearn !== null) {
+          const bookmarkKey = `bookmark_${id}_${t}_${nextChapterToLearn}`;
+          const savedIndexStr = typeof window !== 'undefined' ? localStorage.getItem(bookmarkKey) : null;
+          if (savedIndexStr !== null) {
+            const savedIndex = parseInt(savedIndexStr, 10);
+            nextMishnahLabel = ` משנה ${getHebrewChapter(savedIndex + 1)}`;
           }
         }
         
@@ -934,7 +945,8 @@ export default function EventPage() {
           nextChapterToLearn,
           nextMishnahLabel,
           completedCount,
-          totalOwned: ownedChapters.length
+          totalOwned: ownedChapters.length,
+          uncompletedChapters
         });
       }
     });
@@ -1612,46 +1624,62 @@ export default function EventPage() {
                   <BookOpen className="w-5 h-5" />
                   רצף הלמידה שלי
                 </h3>
-                <div className="space-y-3">
-                  {myLearningRows.map((row, idx) => {
-                    const isAllDone = row.nextChapterToLearn === null;
-                    return (
-                      <div key={idx} className={`bg-white border ${isAllDone ? 'border-green-200' : 'border-amber-100'} rounded-xl p-4 shadow-sm relative overflow-hidden`}>
-                        <div className="flex items-center justify-between relative z-10">
-                          <div>
-                            <div className="font-bold text-slate-800 text-lg">מסכת {row.tractate}</div>
-                            <div className={`text-sm mt-1 font-medium ${isAllDone ? 'text-green-600' : 'text-amber-700'}`}>
-                              {isAllDone ? `סיימת את כל ${row.totalOwned} הפרקים שלקחת!` : `הבא בתור: פרק ${getHebrewChapter(row.nextChapterToLearn!)}${row.nextMishnahLabel}`}
+                  <div className="flex gap-2 mb-4">
+                    <button 
+                      onClick={() => setSelectedTractateForCalendar("ALL")}
+                      className="flex-1 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition"
+                    >
+                      <Calendar className="w-4 h-4" /> יומן לחזרה
+                    </button>
+                    <button 
+                      onClick={() => setSelectedTractateForDaily("ALL")}
+                      className="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-800 py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition"
+                    >
+                      <BookOpen className="w-4 h-4" /> לימוד יומי
+                    </button>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {myLearningRows.map((row, idx) => {
+                      const isAllDone = row.nextChapterToLearn === null;
+                      return (
+                        <div key={idx} className={`bg-white border ${isAllDone ? 'border-green-200' : 'border-amber-100'} rounded-xl p-4 shadow-sm relative overflow-hidden`}>
+                          {isAllDone && (
+                            <div className="absolute -left-6 top-4 bg-green-500 text-white text-[10px] font-bold px-8 py-1 -rotate-45 shadow-sm">
+                              הושלם
+                            </div>
+                          )}
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-bold text-lg text-slate-800">מסכת {row.tractate}</h4>
+                            <div className={`px-2 py-1 rounded-lg text-xs font-bold ${isAllDone ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
+                              {row.completedCount}/{row.totalOwned} פרקים
                             </div>
                           </div>
-                          <div className="flex flex-col items-center justify-center gap-2">
+                          
+                          {isAllDone ? (
+                            <div className="text-sm text-green-700 font-medium mb-3 flex items-center gap-1">
+                              <CheckCircle2 className="w-4 h-4" /> כל הפרקים שלקחת הושלמו
+                            </div>
+                          ) : (
+                            <div className="text-sm text-slate-600 mb-3">
+                              הבא ללימוד: <span className="font-bold">פרק {getHebrewChapter(row.nextChapterToLearn!)}</span> {row.nextMishnahLabel}
+                            </div>
+                          )}
+                          
+                          <div className="flex flex-wrap gap-2">
                             {!isAllDone && (
-                              <div className="flex flex-wrap gap-2 justify-center mb-1">
-                                <button onClick={() => setSelectedTractateForCalendar(row.tractate)} className="text-xs bg-amber-100 text-amber-800 hover:bg-amber-200 py-1.5 px-3 rounded-lg font-bold transition flex items-center gap-1 border border-amber-300">
-                                  <Calendar className="w-3 h-3" /> יומן
-                                </button>
-                                <button onClick={() => {
-                                  setSelectedTractateForDaily(row.tractate);
-                                  setSelectedTractateTotalChapters(TRACTATE_CHAPTERS[row.tractate] || 1);
-                                }} className="text-xs bg-amber-100 text-amber-800 hover:bg-amber-200 py-1.5 px-3 rounded-lg font-bold transition flex items-center gap-1 border border-amber-300">
-                                  <BookOpen className="w-3 h-3" /> משנה יומית
-                                </button>
-                              </div>
-                            )}
-                            {!isAllDone && (
-                              <button onClick={() => handleReleaseTractateComplete(row.tractate)} className="text-xs text-slate-400 hover:text-slate-600 underline font-medium transition px-2">ביטול התחייבות</button>
-                            )}
-                            {!isAllDone ? (
-                              <Link href={`/study/${id}/${encodeURIComponent(row.tractate)}/${row.nextChapterToLearn}`} className="bg-amber-600 text-white px-5 py-3 rounded-xl font-bold text-sm hover:bg-amber-700 transition flex items-center gap-2 shadow-md active:scale-95"><PlayCircle className="w-5 h-5" /> למד כעת</Link>
-                            ) : (
-                              <div className="bg-green-100 text-green-700 p-2 rounded-full"><CheckCircle2 className="w-8 h-8" /></div>
+                              <Link 
+                                href={`/study/${id}/${row.tractate}/${row.nextChapterToLearn!}`}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-sm font-bold flex justify-center items-center gap-1 transition shadow-sm"
+                              >
+                                <PlayCircle className="w-4 h-4" /> המשך מאיפה שעצרת
+                              </Link>
                             )}
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
               </section>
             )}
             <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
@@ -1907,24 +1935,25 @@ export default function EventPage() {
         </div>
       )}
 
-      {/* Daily Learning Modal */}
-      <DailyLearningModal 
-        isOpen={!!selectedTractateForDaily}
-        onClose={() => setSelectedTractateForDaily(null)}
-        tractate={selectedTractateForDaily || ''}
-        totalChapters={selectedTractateTotalChapters}
-        targetDateStr={event?.shloshimDateStr || event?.yahrzeitDateStr}
-        passingDateStr={event?.passingDate}
-      />
+      {selectedTractateForCalendar && event && (
+        <CalendarModal 
+          isOpen={!!selectedTractateForCalendar} 
+          onClose={() => setSelectedTractateForCalendar(null)} 
+          learningRows={myLearningRows}
+          event={event}
+          eventId={id as string}
+        />
+      )}
 
-      {/* Calendar Modal */}
-      <CalendarModal
-        isOpen={!!selectedTractateForCalendar}
-        onClose={() => setSelectedTractateForCalendar(null)}
-        tractate={selectedTractateForCalendar || ''}
-        event={event}
-        eventId={id as string}
-      />
+      {selectedTractateForDaily && (
+        <DailyLearningModal
+          isOpen={!!selectedTractateForDaily}
+          onClose={() => setSelectedTractateForDaily(null)}
+          learningRows={myLearningRows}
+          targetDateStr={event?.shloshimDateStr || event?.yahrzeitDateStr}
+          passingDateStr={event?.passingDate}
+        />
+      )}
     </div>
   );
 }

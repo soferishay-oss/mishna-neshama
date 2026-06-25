@@ -8,6 +8,7 @@ import { getHebrewChapter } from "@/lib/tractates";
 import { ArrowRight, BookOpen, Calendar, CheckCircle2, PlayCircle, Trophy, ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { TRACTATE_CHAPTERS } from "@/lib/tractates";
+import { HDate } from "@hebcal/core";
 
 export default function MyLearningPage() {
   const router = useRouter();
@@ -78,7 +79,6 @@ export default function MyLearningPage() {
           
           if (!computedTargetDateStr && ev.passingDate) {
               try {
-                  const HDate = require('@hebcal/core').HDate;
                   const passHDate = new HDate(new Date(ev.passingDate));
                   computedTargetDateStr = passHDate.add(29, 'd').greg().toISOString();
               } catch(e) {}

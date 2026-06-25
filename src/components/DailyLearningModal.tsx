@@ -5,14 +5,14 @@ import { HDate } from '@hebcal/core';
 interface DailyLearningModalProps {
   isOpen: boolean;
   onClose: () => void;
-  tractate: string;
-  totalChapters: number;
+  learningRows: Array<{ tractate: string, uncompletedChapters: number[] }>;
   targetDateStr: string | undefined;
   passingDateStr: string | undefined;
 }
 
-export default function DailyLearningModal({ isOpen, onClose, tractate, totalChapters, targetDateStr, passingDateStr }: DailyLearningModalProps) {
-  const [schedule, setSchedule] = useState<{date: string, hebrewDate: string, chapters: string}[]>([]);
+export default function DailyLearningModal({ isOpen, onClose, learningRows, targetDateStr, passingDateStr }: DailyLearningModalProps) {
+  const [schedule, setSchedule] = useState<{date: string, hebrewDate: string, displayChapters: string[]}[]>([]);
+  const [showGregorian, setShowGregorian] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -42,44 +42,61 @@ export default function DailyLearningModal({ isOpen, onClose, tractate, totalCha
       current.setDate(current.getDate() + 1);
     }
 
-    if (validDays.length === 0) {
+    const allChapters: { tractate: string, chapter: number }[] = [];
+    learningRows.forEach(row => {
+      row.uncompletedChapters.forEach(ch => {
+        allChapters.push({ tractate: row.tractate, chapter: ch });
+      });
+    });
+
+    if (validDays.length === 0 || allChapters.length === 0) {
       setSchedule([]);
       return;
     }
 
+    const totalChapters = allChapters.length;
     const chaptersPerDay = totalChapters / validDays.length;
     
-    let currentChapter = 1;
-    const newSchedule: {date: string, hebrewDate: string, chapters: string}[] = [];
+    const newSchedule: {date: string, hebrewDate: string, displayChapters: string[]}[] = [];
+    let currentChapterIndex = 0;
     
     for (let i = 0; i < validDays.length; i++) {
        const date = validDays[i];
        const hDate = new HDate(date);
        
-       let endChapter = currentChapter + chaptersPerDay;
-       if (i === validDays.length - 1) endChapter = totalChapters + 1; 
+       let endChapterIndex = Math.round((i + 1) * chaptersPerDay);
+       if (i === validDays.length - 1) endChapterIndex = totalChapters; 
        
-       let chStart = Math.floor(currentChapter);
-       let chEnd = Math.floor(endChapter - 0.001); 
+       const dayChapters = allChapters.slice(currentChapterIndex, endChapterIndex);
        
-       let text = "";
-       if (chStart === chEnd) {
-          text = `פרק ${getHebrew(chStart)}`;
-       } else {
-          text = `פרק ${getHebrew(chStart)} - ${getHebrew(chEnd)}`;
-       }
+       // Group dayChapters by tractate
+       const grouped: Record<string, number[]> = {};
+       dayChapters.forEach(ch => {
+          if (!grouped[ch.tractate]) grouped[ch.tractate] = [];
+          grouped[ch.tractate].push(ch.chapter);
+       });
+       
+       const displayChapters: string[] = [];
+       Object.keys(grouped).forEach(t => {
+          const chs = grouped[t];
+          if (chs.length === 1) {
+             displayChapters.push(`מסכת ${t}: פרק ${getHebrew(chs[0] + 1)}`);
+          } else {
+             displayChapters.push(`מסכת ${t}: פרקים ${getHebrew(chs[0] + 1)}-${getHebrew(chs[chs.length - 1] + 1)}`);
+          }
+       });
        
        newSchedule.push({
          date: date.toLocaleDateString('he-IL', { weekday: 'short', month: 'numeric', day: 'numeric' }),
          hebrewDate: hDate.renderGematriya(true),
-         chapters: text
+         displayChapters
        });
        
-       currentChapter = endChapter;
+       currentChapterIndex = endChapterIndex;
     }
 
     setSchedule(newSchedule);
-  }, [isOpen, tractate, totalChapters, targetDateStr, passingDateStr]);
+  }, [isOpen, learningRows, targetDateStr, passingDateStr]);
 
   const getHebrew = (num: number) => {
     const letters = ["", "א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "יא", "יב", "יג", "יד", "טו", "טז", "יז", "יח", "יט", "כ", "כא", "כב", "כג", "כד", "כה", "כו", "כז", "כח", "כט", "ל"];
@@ -100,35 +117,73 @@ export default function DailyLearningModal({ isOpen, onClose, tractate, totalCha
               <CalendarIcon className="w-8 h-8" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold">משנה יומית</h2>
-              <p className="text-blue-100 mt-1">תוכנית לימוד אישית למסכת {tractate}</p>
+              <h2 className="text-2xl font-bold">לימוד יומי</h2>
+              <p className="text-blue-100 mt-1">תוכנית לחלוקת כלל הפרקים לימים הנותרים</p>
             </div>
           </div>
         </div>
         
-        <div className="p-6 overflow-y-auto flex-1 print:p-0">
+        <div className="p-6 overflow-y-auto flex-1 print:hidden">
           {schedule.length === 0 ? (
             <div className="text-center text-slate-500 py-8">
-              לא נותרו מספיק ימי חול עד לתאריך היעד או שתאריך היעד כבר עבר.
+              אין פרקים זמינים ללמידה או שתאריך היעד כבר עבר.
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="bg-blue-50 text-blue-800 p-4 rounded-xl text-sm font-medium mb-4 print:hidden">
-                התוכנית חולקה ל-{schedule.length} ימי חול (ללא ימי שבת). השתדל לעמוד בקצב!
+              <div className="bg-blue-50 text-blue-800 p-4 rounded-xl text-sm font-medium mb-4 flex justify-between items-center">
+                <span>התוכנית חולקה ל-{schedule.length} ימי חול. השתדל לעמוד בקצב!</span>
+                <label className="flex items-center gap-2 text-xs font-bold bg-white px-3 py-1.5 rounded-lg border border-blue-200 cursor-pointer shadow-sm">
+                  <input type="checkbox" checked={showGregorian} onChange={(e) => setShowGregorian(e.target.checked)} className="rounded text-blue-600 focus:ring-blue-500" />
+                  הצג לועזי
+                </label>
               </div>
               {schedule.map((day, i) => (
                 <div key={i} className="flex items-center justify-between p-3 border-b border-slate-100 hover:bg-slate-50 rounded-lg transition">
-                  <div>
-                    <div className="font-bold text-slate-800">{day.date}</div>
-                    <div className="text-xs text-slate-500">{day.hebrewDate}</div>
+                  <div className="flex flex-col w-1/3">
+                    <div className="font-bold text-slate-800">{day.hebrewDate}</div>
+                    {showGregorian && <div className="text-xs text-slate-500">{day.date}</div>}
                   </div>
-                  <div className="font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg print:bg-transparent print:border print:border-slate-300">
-                    {day.chapters}
+                  <div className="flex flex-col gap-1 items-end w-2/3">
+                    {day.displayChapters.map((ch, idx) => (
+                      <div key={idx} className="font-bold text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
+                        {ch}
+                      </div>
+                    ))}
                   </div>
                 </div>
               ))}
             </div>
           )}
+        </div>
+
+        {/* Printable Table */}
+        <div className="hidden print:block bg-white p-8 font-serif" dir="rtl">
+           <div className="text-center mb-6">
+             <h2 className="text-2xl font-bold mb-2">לימוד יומי - חלוקת פרקים</h2>
+           </div>
+           <table className="w-full text-right border-collapse border-2 border-black text-sm">
+             <thead>
+               <tr>
+                 <th className="border border-black p-2 bg-slate-100 w-1/3 font-bold">תאריך</th>
+                 <th className="border border-black p-2 bg-slate-100 w-2/3 font-bold">הלימוד היומי</th>
+               </tr>
+             </thead>
+             <tbody>
+               {schedule.map((day, i) => (
+                 <tr key={i}>
+                   <td className="border border-black p-2 align-top">
+                     <div className="font-bold">{day.hebrewDate}</div>
+                     {showGregorian && <div className="text-xs">{day.date}</div>}
+                   </td>
+                   <td className="border border-black p-2 align-top">
+                     {day.displayChapters.map((ch, idx) => (
+                       <div key={idx} className="font-bold">{ch}</div>
+                     ))}
+                   </td>
+                 </tr>
+               ))}
+             </tbody>
+           </table>
         </div>
         
         <div className="p-4 border-t bg-slate-50 shrink-0 flex justify-between print:hidden">

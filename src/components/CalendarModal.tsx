@@ -5,16 +5,22 @@ import { EventData } from '@/lib/events';
 interface CalendarModalProps {
   isOpen: boolean;
   onClose: () => void;
-  tractate: string;
-  event: EventData | null;
+  learningRows: Array<{ tractate: string }>;
+  event: EventData;
   eventId: string;
 }
 
-export default function CalendarModal({ isOpen, onClose, tractate, event, eventId }: CalendarModalProps) {
+export default function CalendarModal({ isOpen, onClose, learningRows, event, eventId }: CalendarModalProps) {
   const [reminderType, setReminderType] = useState('1week');
   const [recurringDays, setRecurringDays] = useState(3);
 
   if (!isOpen || !event) return null;
+
+  const tractates = learningRows.map(r => r.tractate);
+  const tractatesStr = tractates.length > 1 
+    ? tractates.slice(0, -1).join(', ') + ' ו' + tractates[tractates.length - 1] 
+    : tractates[0] || '';
+  const tractateLabel = tractates.length > 1 ? `מסכתות ${tractatesStr}` : `מסכת ${tractatesStr}`;
 
   const handleDownloadICS = () => {
     let targetDateStr = event.shloshimDateStr || event.yahrzeitDateStr || event.passingDate;
@@ -25,19 +31,18 @@ export default function CalendarModal({ isOpen, onClose, tractate, event, eventI
     const targetDate = new Date(targetDateStr);
     const dtstart = targetDate.toISOString().replace(/[-:]/g, '').substring(0,8);
     
-    const eventName = `סיום מסכת ${tractate} - ${event.deceasedName}`;
-    const description = `תזכורת לסיום מסכת ${tractate} לעילוי נשמת ${event.deceasedTitle ? event.deceasedTitle + ' ' : ''}${event.deceasedName}.\\n\\nקישור ללימוד:\\n${window.location.origin}/event/${eventId}`;
+    const eventName = `סיום ${tractateLabel} - ${event.deceasedName}`;
+    const description = `תזכורת לסיום ${tractateLabel} לעילוי נשמת ${event.deceasedName} ${event.deceasedTitle || ''}.\\n\\nקישור ללימוד:\\n${window.location.origin}/event/${eventId}`;
 
     let alarm = '';
     if (reminderType === '1week') {
-      alarm = `BEGIN:VALARM\\nTRIGGER:-P1W\\nACTION:DISPLAY\\nDESCRIPTION:תזכורת: בעוד שבוע יעד סיום מסכת ${tractate}\\nEND:VALARM`;
+      alarm = `BEGIN:VALARM\\nTRIGGER:-P1W\\nACTION:DISPLAY\\nDESCRIPTION:תזכורת: בעוד שבוע יעד סיום ${tractateLabel}\\nEND:VALARM`;
     } else if (reminderType === '1day') {
-      alarm = `BEGIN:VALARM\\nTRIGGER:-P1D\\nACTION:DISPLAY\\nDESCRIPTION:תזכורת: מחר יעד סיום מסכת ${tractate}\\nEND:VALARM`;
+      alarm = `BEGIN:VALARM\\nTRIGGER:-P1D\\nACTION:DISPLAY\\nDESCRIPTION:תזכורת: מחר יעד סיום ${tractateLabel}\\nEND:VALARM`;
     } else if (reminderType === '3days') {
-      alarm = `BEGIN:VALARM\\nTRIGGER:-P3D\\nACTION:DISPLAY\\nDESCRIPTION:תזכורת: בעוד 3 ימים יעד סיום מסכת ${tractate}\\nEND:VALARM`;
-    } else if (reminderType === 'daily') {
-      // Actually creating a daily recurring alarm is complex in ICS, we'll just add multiple alarms
-      alarm = `BEGIN:VALARM\\nTRIGGER:-P1W\\nACTION:DISPLAY\\nDESCRIPTION:תזכורת סיום מסכת\\nEND:VALARM\\nBEGIN:VALARM\\nTRIGGER:-P5D\\nACTION:DISPLAY\\nDESCRIPTION:תזכורת סיום מסכת\\nEND:VALARM\\nBEGIN:VALARM\\nTRIGGER:-P3D\\nACTION:DISPLAY\\nDESCRIPTION:תזכורת סיום מסכת\\nEND:VALARM\\nBEGIN:VALARM\\nTRIGGER:-P1D\\nACTION:DISPLAY\\nDESCRIPTION:תזכורת מחר סיום מסכת\\nEND:VALARM`;
+      alarm = `BEGIN:VALARM\\nTRIGGER:-P3D\\nACTION:DISPLAY\\nDESCRIPTION:תזכורת: בעוד 3 ימים יעד סיום ${tractateLabel}\\nEND:VALARM`;
+    } else if (reminderType === 'recurring') {
+      alarm = `BEGIN:VALARM\\nTRIGGER:-P1W\\nACTION:DISPLAY\\nDESCRIPTION:תזכורת סיום ${tractateLabel}\\nEND:VALARM\\nBEGIN:VALARM\\nTRIGGER:-P5D\\nACTION:DISPLAY\\nDESCRIPTION:תזכורת סיום ${tractateLabel}\\nEND:VALARM\\nBEGIN:VALARM\\nTRIGGER:-P3D\\nACTION:DISPLAY\\nDESCRIPTION:תזכורת סיום ${tractateLabel}\\nEND:VALARM\\nBEGIN:VALARM\\nTRIGGER:-P1D\\nACTION:DISPLAY\\nDESCRIPTION:תזכורת מחר סיום ${tractateLabel}\\nEND:VALARM`;
     }
 
     const icsContent = `BEGIN:VCALENDAR
@@ -79,24 +84,28 @@ END:VCALENDAR`;
     finalTargetDate.setHours(0,0,0,0);
     
     let eventDate = new Date(finalTargetDate);
-    let eventName = "";
-    let rrule = "";
+    const tractates = learningRows.map(r => r.tractate);
+    const tractatesStr = tractates.length > 1 
+      ? tractates.slice(0, -1).join(', ') + ' ו' + tractates[tractates.length - 1] 
+      : tractates[0] || '';
+    
+    const tractateLabel = tractates.length > 1 ? `מסכתות ${tractatesStr}` : `מסכת ${tractatesStr}`;
 
     const deceasedNameText = `${event.deceasedName} ${event.deceasedTitle || ''}`.trim();
 
     if (reminderType === '1week') {
       eventDate.setDate(eventDate.getDate() - 7);
-      eventName = `נותר שבוע לסיום מסכת ${tractate} לע"נ ${deceasedNameText}`;
+      eventName = `נותר שבוע לסיום ${tractateLabel} לע"נ ${deceasedNameText}`;
     } else if (reminderType === '3days') {
       eventDate.setDate(eventDate.getDate() - 3);
-      eventName = `נותרו 3 ימים לסיום מסכת ${tractate} לע"נ ${deceasedNameText}`;
+      eventName = `נותרו 3 ימים לסיום ${tractateLabel} לע"נ ${deceasedNameText}`;
     } else if (reminderType === '1day') {
       eventDate.setDate(eventDate.getDate() - 1);
-      eventName = `מחר יעד סיום מסכת ${tractate} לע"נ ${deceasedNameText}`;
+      eventName = `מחר יעד סיום ${tractateLabel} לע"נ ${deceasedNameText}`;
     } else if (reminderType === 'recurring') {
       eventDate = new Date(); // start today
       const hebrewTarget = event.shloshimDateHebrew || event.yahrzeitDateHebrew || "";
-      eventName = `תזכורת ללימוד מסכת ${tractate} לעילוי נשמת ${deceasedNameText} עד ${hebrewTarget}`;
+      eventName = `תזכורת ללימוד ${tractateLabel} לעילוי נשמת ${deceasedNameText} עד ${hebrewTarget}`;
       const untilDate = new Date(finalTargetDate);
       untilDate.setDate(untilDate.getDate() + 1);
       const dtendRecur = untilDate.toISOString().replace(/[-:]/g, '').substring(0,8);
@@ -110,7 +119,7 @@ END:VCALENDAR`;
     const dtend = endDate.toISOString().replace(/[-:]/g, '').substring(0,8);
     
     const eventUrl = `${window.location.origin}/event/${eventId}`;
-    const description = `תזכורת ללימוד מסכת ${tractate} לעילוי נשמת ${deceasedNameText}.<br><br>קישור ללימוד:<br><a href="${eventUrl}">${eventUrl}</a>`;
+    const description = `תזכורת ללימוד ${tractateLabel} לעילוי נשמת ${deceasedNameText}.<br><br>קישור ללימוד:<br><a href="${eventUrl}">${eventUrl}</a>`;
 
     const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventName)}&dates=${dtstart}/${dtend}&details=${encodeURIComponent(description)}${rrule}`;
     window.open(url, '_blank');

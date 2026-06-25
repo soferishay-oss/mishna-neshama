@@ -1672,7 +1672,7 @@ export default function EventPage() {
                                 href={`/study/${id}/${row.tractate}/${row.nextChapterToLearn!}`}
                                 className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-sm font-bold flex justify-center items-center gap-1 transition shadow-sm"
                               >
-                                <PlayCircle className="w-4 h-4" /> המשך מאיפה שעצרת
+                                <PlayCircle className="w-4 h-4" /> המשך ללמוד
                               </Link>
                             )}
                           </div>

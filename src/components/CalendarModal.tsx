@@ -58,7 +58,7 @@ ${alarm}
 BEGIN:VALARM
 TRIGGER:-PT9H
 ACTION:DISPLAY
-DESCRIPTION:היום יעד סיום מסכת ${tractate}
+DESCRIPTION:היום יעד סיום ${tractateLabel}
 END:VALARM
 END:VEVENT
 END:VCALENDAR`;
@@ -66,7 +66,7 @@ END:VCALENDAR`;
     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
     const link = document.createElement('a');
     link.href = window.URL.createObjectURL(blob);
-    link.setAttribute('download', `siyum_${tractate}.ics`);
+    link.setAttribute('download', `siyum_${tractatesStr.replace(/ /g, '_')}.ics`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -84,6 +84,9 @@ END:VCALENDAR`;
     finalTargetDate.setHours(0,0,0,0);
     
     let eventDate = new Date(finalTargetDate);
+    let eventName = "";
+    let rrule = "";
+
     const tractates = learningRows.map(r => r.tractate);
     const tractatesStr = tractates.length > 1 
       ? tractates.slice(0, -1).join(', ') + ' ו' + tractates[tractates.length - 1] 

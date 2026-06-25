@@ -147,17 +147,19 @@ END:VCALENDAR`;
           </select>
           
           {reminderType === 'recurring' && (
-            <div className="mb-4">
-               <label className="block text-sm font-bold text-slate-700 mb-2">כל כמה ימים?</label>
+            <div className="mb-4 flex items-center justify-center gap-3 bg-slate-100 p-4 rounded-xl border border-slate-200">
+               <span className="text-base font-bold text-slate-700">כל</span>
                <select 
                  value={recurringDays} 
                  onChange={(e) => setRecurringDays(parseInt(e.target.value) || 3)}
-                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 outline-none"
+                 className="w-20 bg-white border-2 border-slate-300 rounded-lg px-2 py-2 text-center text-xl text-slate-800 font-black shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none appearance-none"
+                 style={{ WebkitAppearance: 'none', MozAppearance: 'none', appearance: 'none', textAlignLast: 'center' }}
                >
                  {Array.from({ length: 15 }).map((_, i) => (
-                   <option key={i+1} value={i+1}>כל {i+1} ימים</option>
+                   <option key={i+1} value={i+1}>{i+1}</option>
                  ))}
                </select>
+               <span className="text-base font-bold text-slate-700">ימים</span>
             </div>
           )}
 

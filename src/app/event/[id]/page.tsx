@@ -1628,6 +1628,19 @@ export default function EventPage() {
                           </div>
                           <div className="flex flex-col items-center justify-center gap-2">
                             {!isAllDone && (
+                              <div className="flex flex-wrap gap-2 justify-center mb-1">
+                                <button onClick={() => setSelectedTractateForCalendar(row.tractate)} className="text-xs bg-amber-100 text-amber-800 hover:bg-amber-200 py-1.5 px-3 rounded-lg font-bold transition flex items-center gap-1 border border-amber-300">
+                                  <Calendar className="w-3 h-3" /> יומן
+                                </button>
+                                <button onClick={() => {
+                                  setSelectedTractateForDaily(row.tractate);
+                                  setSelectedTractateTotalChapters(TRACTATE_CHAPTERS[row.tractate] || 1);
+                                }} className="text-xs bg-amber-100 text-amber-800 hover:bg-amber-200 py-1.5 px-3 rounded-lg font-bold transition flex items-center gap-1 border border-amber-300">
+                                  <BookOpen className="w-3 h-3" /> משנה יומית
+                                </button>
+                              </div>
+                            )}
+                            {!isAllDone && (
                               <button onClick={() => handleReleaseTractateComplete(row.tractate)} className="text-xs text-slate-400 hover:text-slate-600 underline font-medium transition px-2">ביטול התחייבות</button>
                             )}
                             {!isAllDone ? (

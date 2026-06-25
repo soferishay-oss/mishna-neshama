@@ -1684,7 +1684,7 @@ export default function EventPage() {
 
                   {/* Printable Table for Organizer */}
                   {isPrintingEmptyTable && (
-                    <div className="hidden print:block fixed inset-0 bg-white z-[9999] p-8 w-full min-h-screen font-serif" dir="rtl">
+                    <div className="hidden print:block fixed print:absolute inset-0 print:inset-auto print:top-0 print:left-0 bg-white z-[9999] p-8 w-full min-h-screen h-auto font-serif" dir="rtl">
                        <style dangerouslySetInnerHTML={{__html: `
                          @media print {
                            @page { size: A4 portrait; margin: 1cm; }

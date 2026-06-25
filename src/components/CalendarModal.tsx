@@ -149,13 +149,15 @@ END:VCALENDAR`;
           {reminderType === 'recurring' && (
             <div className="mb-4">
                <label className="block text-sm font-bold text-slate-700 mb-2">כל כמה ימים?</label>
-               <input 
-                 type="number" 
-                 min="1" 
+               <select 
                  value={recurringDays} 
-                 onChange={(e) => setRecurringDays(Math.max(1, parseInt(e.target.value) || 1))}
+                 onChange={(e) => setRecurringDays(parseInt(e.target.value) || 3)}
                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 outline-none"
-               />
+               >
+                 {Array.from({ length: 15 }).map((_, i) => (
+                   <option key={i+1} value={i+1}>כל {i+1} ימים</option>
+                 ))}
+               </select>
             </div>
           )}
 

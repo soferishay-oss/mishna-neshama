@@ -12,6 +12,7 @@ interface CalendarModalProps {
 
 export default function CalendarModal({ isOpen, onClose, tractate, event, eventId }: CalendarModalProps) {
   const [reminderType, setReminderType] = useState('1week');
+  const [recurringDays, setRecurringDays] = useState(3);
 
   if (!isOpen || !event) return null;
 
@@ -74,17 +75,40 @@ END:VCALENDAR`;
        alert("לא הוגדר תאריך יעד לאירוע זה.");
        return;
     }
-    const targetDate = new Date(targetDateStr);
-    const dtstart = targetDate.toISOString().replace(/[-:]/g, '').substring(0,8);
+    const finalTargetDate = new Date(targetDateStr);
+    finalTargetDate.setHours(0,0,0,0);
+    
+    let eventDate = new Date(finalTargetDate);
+    let eventName = "";
+    let rrule = "";
+
+    if (reminderType === '1week') {
+      eventDate.setDate(eventDate.getDate() - 7);
+      eventName = `נותר שבוע לסיום מסכת ${tractate} - ${event.deceasedName}`;
+    } else if (reminderType === '3days') {
+      eventDate.setDate(eventDate.getDate() - 3);
+      eventName = `נותרו 3 ימים לסיום מסכת ${tractate} - ${event.deceasedName}`;
+    } else if (reminderType === '1day') {
+      eventDate.setDate(eventDate.getDate() - 1);
+      eventName = `מחר יעד סיום מסכת ${tractate} - ${event.deceasedName}`;
+    } else if (reminderType === 'recurring') {
+      eventDate = new Date(); // start today
+      eventName = `תזכורת ללימוד מסכת ${tractate} לעילוי נשמת ${event.deceasedName} עד יום היעד`;
+      const untilDate = new Date(finalTargetDate);
+      untilDate.setDate(untilDate.getDate() + 1);
+      const dtendRecur = untilDate.toISOString().replace(/[-:]/g, '').substring(0,8);
+      rrule = `&recur=RRULE:FREQ=DAILY;INTERVAL=${recurringDays};UNTIL=${dtendRecur}`;
+    }
+
+    const dtstart = eventDate.toISOString().replace(/[-:]/g, '').substring(0,8);
     // For full day event in Google calendar, end date must be the next day
-    const endDate = new Date(targetDate);
+    const endDate = new Date(eventDate);
     endDate.setDate(endDate.getDate() + 1);
     const dtend = endDate.toISOString().replace(/[-:]/g, '').substring(0,8);
     
-    const eventName = `סיום מסכת ${tractate} - ${event.deceasedName}`;
-    const description = `תזכורת לסיום מסכת ${tractate} לעילוי נשמת ${event.deceasedTitle ? event.deceasedTitle + ' ' : ''}${event.deceasedName}.\\n\\nקישור ללימוד:\\n${window.location.origin}/event/${eventId}`;
+    const description = `תזכורת ללימוד מסכת ${tractate} לעילוי נשמת ${event.deceasedTitle ? event.deceasedTitle + ' ' : ''}${event.deceasedName}.\\n\\nקישור ללימוד:\\n${window.location.origin}/event/${eventId}`;
 
-    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventName)}&dates=${dtstart}/${dtend}&details=${encodeURIComponent(description)}`;
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventName)}&dates=${dtstart}/${dtend}&details=${encodeURIComponent(description)}${rrule}`;
     window.open(url, '_blank');
     onClose();
   };
@@ -115,11 +139,24 @@ END:VCALENDAR`;
             <option value="1week">שבוע לפני תאריך היעד</option>
             <option value="3days">3 ימים לפני תאריך היעד</option>
             <option value="1day">יום לפני תאריך היעד</option>
-            <option value="daily">כל כמה ימים (מרובה)</option>
+            <option value="recurring">כל כמה ימים (מרובה)</option>
           </select>
           
+          {reminderType === 'recurring' && (
+            <div className="mb-4">
+               <label className="block text-sm font-bold text-slate-700 mb-2">כל כמה ימים?</label>
+               <input 
+                 type="number" 
+                 min="1" 
+                 value={recurringDays} 
+                 onChange={(e) => setRecurringDays(Math.max(1, parseInt(e.target.value) || 1))}
+                 className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 outline-none"
+               />
+            </div>
+          )}
+
           <div className="space-y-3">
-            <button onClick={handleGoogleCalendar} className="w-full bg-red-600 text-white rounded-xl py-3 font-bold text-lg hover:bg-red-700 transition flex items-center justify-center gap-2 shadow-sm">
+            <button onClick={handleGoogleCalendar} className="w-full bg-slate-800 text-white rounded-xl py-3 font-bold text-lg hover:bg-slate-900 transition flex items-center justify-center gap-2 shadow-sm">
               <CalendarIcon className="w-5 h-5" />
               הוסף ל-Google Calendar
             </button>
@@ -128,9 +165,15 @@ END:VCALENDAR`;
               הורד ל-Apple / Outlook
             </button>
           </div>
-          <p className="text-center text-xs text-slate-500 mt-4">
-            * בגוגל יומן התזכורת תלויה בהגדרות ברירת המחדל של היומן שלך.
-          </p>
+          {reminderType === 'recurring' ? (
+             <p className="text-center text-xs text-slate-500 mt-4">
+               * ייצור אירוע מחזורי ביומן שחוזר כל {recurringDays} ימים עד תאריך היעד.
+             </p>
+          ) : (
+             <p className="text-center text-xs text-slate-500 mt-4">
+               * יומן גוגל ייפתח בדפדפן וייצור את האירוע ביום המבוקש.
+             </p>
+          )}
         </div>
       </div>
     </div>

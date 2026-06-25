@@ -49,8 +49,6 @@ export default function EventPage() {
   const [adminPasswordInput, setAdminPasswordInput] = useState("");
   const [adminLoginError, setAdminLoginError] = useState(false);
   
-  const [isPrintingEmptyTable, setIsPrintingEmptyTable] = useState(false);
-
   const [selectedTractateForCalendar, setSelectedTractateForCalendar] = useState<string | null>(null);
   const [selectedTractateForDaily, setSelectedTractateForDaily] = useState<string | null>(null);
   const [selectedTractateTotalChapters, setSelectedTractateTotalChapters] = useState(0);
@@ -694,11 +692,7 @@ export default function EventPage() {
   };
 
   const handlePrintEmptyTable = () => {
-    setIsPrintingEmptyTable(true);
-    setTimeout(() => {
-      window.print();
-      setTimeout(() => setIsPrintingEmptyTable(false), 500);
-    }, 100);
+    window.print();
   };
 
   const handleGeneratePoster = async (withNames: boolean = true) => {
@@ -1683,8 +1677,7 @@ export default function EventPage() {
                   </div>
 
                   {/* Printable Table for Organizer */}
-                  {isPrintingEmptyTable && (
-                    <div className="hidden print:block fixed print:absolute inset-0 print:inset-auto print:top-0 print:left-0 bg-white z-[9999] p-8 w-full min-h-screen h-auto font-serif" dir="rtl">
+                  <div className="hidden print:block bg-white w-full h-auto font-serif" dir="rtl">
                        <style dangerouslySetInnerHTML={{__html: `
                          @media print {
                            @page { size: A4 portrait; margin: 1cm; }
@@ -1764,7 +1757,6 @@ export default function EventPage() {
                          </div>
                        </div>
                     </div>
-                  )}
 
                   {showChaptersModal && selectedTractate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">

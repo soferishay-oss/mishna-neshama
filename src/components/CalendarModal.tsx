@@ -141,7 +141,7 @@ END:VCALENDAR`;
               <CalendarIcon className="w-8 h-8" />
             </div>
             <h2 className="text-2xl font-bold">הוסף ליומן</h2>
-            <p className="text-blue-100 mt-1 text-sm">קבל תזכורת לסיום מסכת {tractate}</p>
+            <p className="text-blue-100 mt-1 text-sm">קבל תזכורת לסיום מסכת {tractatesStr}</p>
           </div>
         </div>
         

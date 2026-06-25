@@ -451,7 +451,100 @@ export default function EventPage() {
     }
     
     setQuickAssignNames(prev => ({ ...prev, [displayTractate]: "" }));
-    alert(`ההקצאה בוצעה בהצלחה ל-${learnerName}`);
+    alert(`הוקצתה המסכת ${displayTractate} ל-${learnerName}`);
+  };
+
+  const handleReleaseFullTractateByOrganizer = async (displayTractate: string) => {
+    if (!confirm(`האם אתה בטוח שברצונך לבטל את כל ההתחייבויות למסכת ${displayTractate}?`)) return;
+    
+    let tractateName = displayTractate;
+    let chapterIndices: number[] = [];
+    if (displayTractate === "כלים (א-י)") {
+       chapterIndices = [0,1,2,3,4,5,6,7,8,9];
+       tractateName = "כלים";
+    } else if (displayTractate === "כלים (יא-כ)") {
+       chapterIndices = [10,11,12,13,14,15,16,17,18,19];
+       tractateName = "כלים";
+    } else if (displayTractate === "כלים (כא-ל)") {
+       chapterIndices = [20,21,22,23,24,25,26,27,28,29];
+       tractateName = "כלים";
+    } else {
+       chapterIndices = Array.from({length: TRACTATE_CHAPTERS[displayTractate]}, (_, i) => i);
+    }
+
+    const updates: Record<string, any> = {};
+    const deletePromises: Promise<any>[] = [];
+    
+    chapterIndices.forEach(ch => {
+       updates[`events/${id}/tractates/${tractateName}/chapters/${ch}`] = null;
+       deletePromises.push(
+          fetch(`/api/mockdb?path=events/${id}/tractates/${tractateName}/chapters/${ch}`, { method: 'DELETE' })
+       );
+    });
+
+    if (isMockMode) {
+      await Promise.all(deletePromises);
+      refreshMockData();
+    } else {
+       await update(ref(db), updates);
+    }
+  };
+
+  const handleAssignAllBulk = async () => {
+    const toAssign = Object.entries(quickAssignNames).filter(([_, name]) => name.trim() !== "");
+    if (toAssign.length === 0) return;
+    
+    if (!confirm(`האם לשמור ולשייך ${toAssign.length} מסכתות בבת אחת?`)) return;
+
+    const updates: Record<string, any> = {};
+    const promises: Promise<any>[] = [];
+    const timestamp = Date.now();
+
+    for (const [displayTractate, learnerName] of toAssign) {
+       let tractateName = displayTractate;
+       let chaptersToAssign: number[] = [];
+       if (displayTractate === "כלים (א-י)") {
+          chaptersToAssign = [0,1,2,3,4,5,6,7,8,9];
+          tractateName = "כלים";
+       } else if (displayTractate === "כלים (יא-כ)") {
+          chaptersToAssign = [10,11,12,13,14,15,16,17,18,19];
+          tractateName = "כלים";
+       } else if (displayTractate === "כלים (כא-ל)") {
+          chaptersToAssign = [20,21,22,23,24,25,26,27,28,29];
+          tractateName = "כלים";
+       } else {
+          chaptersToAssign = Array.from({length: TRACTATE_CHAPTERS[displayTractate]}, (_, i) => i);
+       }
+
+       chaptersToAssign.forEach(ch => {
+           updates[`events/${id}/tractates/${tractateName}/chapters/${ch}`] = {
+               takerName: learnerName.trim(),
+               takerPhone: "",
+               takenAt: timestamp,
+               isCompleted: false
+           };
+       });
+       
+       if (isMockMode) {
+           promises.push(...chaptersToAssign.map(ch => 
+              fetch(`/api/mockdb?path=events/${id}/tractates/${tractateName}/chapters/${ch}`, {
+                 method: 'PUT',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify(updates[`events/${id}/tractates/${tractateName}/chapters/${ch}`])
+              })
+           ));
+       }
+    }
+
+    if (isMockMode) {
+      await Promise.all(promises);
+      refreshMockData();
+    } else {
+       await update(ref(db), updates);
+    }
+    
+    setQuickAssignNames({});
+    alert(`שויכו ${toAssign.length} מסכתות בהצלחה!`);
   };
 
   const fallbackCopyTextToClipboard = (text: string) => {
@@ -1438,7 +1531,20 @@ export default function EventPage() {
                              return (
                                <tr key={displayTractate} className="border-b border-slate-50 hover:bg-slate-50">
                                  <td className="p-3 font-bold text-slate-700">{displayTractate}</td>
-                                 <td className="p-3 text-slate-500">{takersStr || "-"}</td>
+                                 <td className="p-3 text-slate-500">
+                                   <div className="flex items-center gap-2">
+                                      {takersStr || "-"}
+                                      {takersStr && (
+                                        <button 
+                                          onClick={() => handleReleaseFullTractateByOrganizer(displayTractate)} 
+                                          className="text-red-500 hover:bg-red-50 p-1 rounded-full transition" 
+                                          title="בטל התחייבות זו"
+                                        >
+                                          <X className="w-4 h-4" />
+                                        </button>
+                                      )}
+                                   </div>
+                                 </td>
                                  <td className="p-3">
                                    <div className="flex items-center gap-2">
                                      <input 
@@ -1465,6 +1571,14 @@ export default function EventPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="mt-4 pt-4 border-t flex justify-end">
+                <button 
+                  onClick={handleAssignAllBulk}
+                  className="bg-green-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-green-700 transition shadow-sm"
+                >
+                  שמור שינויים (שייך הכל)
+                </button>
               </div>
             </section>
 

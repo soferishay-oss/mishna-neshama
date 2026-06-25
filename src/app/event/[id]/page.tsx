@@ -1104,7 +1104,8 @@ export default function EventPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-20 relative">
-      <header className="bg-gradient-to-b from-blue-700 to-blue-600 text-white p-6 shadow-md rounded-b-3xl relative overflow-hidden">
+      <div className="print:hidden">
+        <header className="bg-gradient-to-b from-blue-700 to-blue-600 text-white p-6 shadow-md rounded-b-3xl relative overflow-hidden">
         <div className="relative z-10 flex flex-col items-center">
           {event.photoUrl ? (
             <img src={event.photoUrl} alt="תמונת הנפטר" className="w-20 h-20 rounded-full object-cover border-4 border-white/20 mb-3 shadow-lg" />
@@ -1557,6 +1558,7 @@ export default function EventPage() {
                     )}
                   </main>
                   )}
+                  </div>
 
                   {/* Printable Table for Organizer */}
                   {isPrintingEmptyTable && (
@@ -1564,10 +1566,7 @@ export default function EventPage() {
                        <style dangerouslySetInnerHTML={{__html: `
                          @media print {
                            @page { size: A4 portrait; margin: 1cm; }
-                           body * { visibility: hidden; }
-                           .print-table-container, .print-table-container * { visibility: visible; }
                            .print-table-container { position: absolute; left: 0; top: 0; width: 100%; padding: 0; background: white; }
-                           .no-print { display: none !important; }
                          }
                        `}} />
                        <div className="print-table-container max-w-[21cm] mx-auto text-black">
@@ -1580,9 +1579,9 @@ export default function EventPage() {
                          
                          <div className="flex border-4 border-black w-full" dir="rtl">
                            {[
-                             ["זרעים", "מועד"],
-                             ["נשים", "נזיקין"],
-                             ["קדשים", "טהרות"]
+                             ["סדר זרעים", "סדר מועד"],
+                             ["סדר נשים", "סדר נזיקין"],
+                             ["סדר קדשים", "סדר טהרות"]
                            ].map((sederPair, pairIdx) => (
                              <div key={pairIdx} className={`flex-1 ${pairIdx < 2 ? 'border-l-4 border-black' : ''}`}>
                                <table className="w-full text-center text-sm border-collapse">
@@ -1731,30 +1730,63 @@ export default function EventPage() {
             </div>
             
             <div className="overflow-y-auto flex-1 space-y-3">
-              {Object.keys(tractatesData[showOrganizerTractateModal]?.chapters || {}).map((ch) => {
-                const chapterNum = parseInt(ch, 10);
-                const chapterData = tractatesData[showOrganizerTractateModal].chapters[ch];
-                return (
-                  <div key={ch} className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
+              {(() => {
+                const chaptersMap = tractatesData[showOrganizerTractateModal]?.chapters || {};
+                const chaptersKeys = Object.keys(chaptersMap).map(Number).sort((a,b) => a - b);
+                if (chaptersKeys.length === 0) {
+                  return <div className="text-center text-slate-500 py-6">טרם נלקחו פרקים במסכת זו.</div>;
+                }
+                
+                const groups: Record<string, {takerName: string, takerPhone: string, isCompleted: boolean, chapters: number[]}> = {};
+                chaptersKeys.forEach(chNum => {
+                   const cData = chaptersMap[chNum];
+                   const key = `${cData.takerName}_${cData.takerPhone || ''}_${cData.isCompleted}`;
+                   if (!groups[key]) {
+                      groups[key] = {
+                         takerName: cData.takerName,
+                         takerPhone: cData.takerPhone,
+                         isCompleted: cData.isCompleted,
+                         chapters: []
+                      };
+                   }
+                   groups[key].chapters.push(chNum);
+                });
+
+                const formatRanges = (nums: number[]) => {
+                  if (nums.length === 0) return "";
+                  let ranges = [];
+                  let start = nums[0];
+                  let end = nums[0];
+                  for (let i = 1; i < nums.length; i++) {
+                    if (nums[i] === end + 1) {
+                       end = nums[i];
+                    } else {
+                       ranges.push(start === end ? getHebrewChapter(start) : `${getHebrewChapter(start)}-${getHebrewChapter(end)}`);
+                       start = nums[i];
+                       end = nums[i];
+                    }
+                  }
+                  ranges.push(start === end ? getHebrewChapter(start) : `${getHebrewChapter(start)}-${getHebrewChapter(end)}`);
+                  return ranges.join(', ');
+                };
+
+                return Object.values(groups).map((grp, idx) => (
+                  <div key={idx} className="bg-slate-50 border border-slate-100 p-4 rounded-xl">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="font-bold text-slate-800">פרק {getHebrewChapter(chapterNum)}</span>
-                      {chapterData.isCompleted ? (
+                      <span className="font-bold text-slate-800">פרקים {formatRanges(grp.chapters)}</span>
+                      {grp.isCompleted ? (
                         <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-1 rounded-md">הושלם</span>
                       ) : (
                         <span className="text-xs font-bold text-blue-700 bg-blue-100 px-2 py-1 rounded-md">בתהליך</span>
                       )}
                     </div>
                     <div className="text-sm text-slate-600">
-                      <div><span className="font-medium">נלקח על ידי:</span> {chapterData.takerName}</div>
-                      {chapterData.takerPhone && <div><span className="font-medium">טלפון:</span> {chapterData.takerPhone}</div>}
+                      <div><span className="font-medium">נלקח על ידי:</span> {grp.takerName}</div>
+                      {grp.takerPhone && <div><span className="font-medium">טלפון:</span> {grp.takerPhone}</div>}
                     </div>
                   </div>
-                );
-              })}
-              
-              {Object.keys(tractatesData[showOrganizerTractateModal]?.chapters || {}).length === 0 && (
-                <div className="text-center text-slate-500 py-6">טרם נלקחו פרקים במסכת זו.</div>
-              )}
+                ));
+              })()}
             </div>
             
           </div>

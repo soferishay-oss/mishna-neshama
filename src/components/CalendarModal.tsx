@@ -82,7 +82,7 @@ END:VCALENDAR`;
     let eventName = "";
     let rrule = "";
 
-    const deceasedNameText = `${event.deceasedTitle ? event.deceasedTitle + ' ' : ''}${event.deceasedName}`;
+    const deceasedNameText = `${event.deceasedName} ${event.deceasedTitle || ''}`.trim();
 
     if (reminderType === '1week') {
       eventDate.setDate(eventDate.getDate() - 7);
@@ -109,7 +109,8 @@ END:VCALENDAR`;
     endDate.setDate(endDate.getDate() + 1);
     const dtend = endDate.toISOString().replace(/[-:]/g, '').substring(0,8);
     
-    const description = `תזכורת ללימוד מסכת ${tractate} לעילוי נשמת ${deceasedNameText}.\n\nקישור ללימוד:\n${window.location.origin}/event/${eventId}`;
+    const eventUrl = `${window.location.origin}/event/${eventId}`;
+    const description = `תזכורת ללימוד מסכת ${tractate} לעילוי נשמת ${deceasedNameText}.<br><br>קישור ללימוד:<br><a href="${eventUrl}">${eventUrl}</a>`;
 
     const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventName)}&dates=${dtstart}/${dtend}&details=${encodeURIComponent(description)}${rrule}`;
     window.open(url, '_blank');

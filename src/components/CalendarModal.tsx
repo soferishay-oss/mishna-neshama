@@ -68,6 +68,27 @@ END:VCALENDAR`;
     onClose();
   };
 
+  const handleGoogleCalendar = () => {
+    let targetDateStr = event.shloshimDateStr || event.yahrzeitDateStr || event.passingDate;
+    if (!targetDateStr) {
+       alert("לא הוגדר תאריך יעד לאירוע זה.");
+       return;
+    }
+    const targetDate = new Date(targetDateStr);
+    const dtstart = targetDate.toISOString().replace(/[-:]/g, '').substring(0,8);
+    // For full day event in Google calendar, end date must be the next day
+    const endDate = new Date(targetDate);
+    endDate.setDate(endDate.getDate() + 1);
+    const dtend = endDate.toISOString().replace(/[-:]/g, '').substring(0,8);
+    
+    const eventName = `סיום מסכת ${tractate} - ${event.deceasedName}`;
+    const description = `תזכורת לסיום מסכת ${tractate} לעילוי נשמת ${event.deceasedTitle ? event.deceasedTitle + ' ' : ''}${event.deceasedName}.\\n\\nקישור ללימוד:\\n${window.location.origin}/event/${eventId}`;
+
+    const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventName)}&dates=${dtstart}/${dtend}&details=${encodeURIComponent(description)}`;
+    window.open(url, '_blank');
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col">
@@ -89,7 +110,7 @@ END:VCALENDAR`;
           <select 
             value={reminderType}
             onChange={(e) => setReminderType(e.target.value)}
-            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 outline-none mb-6"
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 outline-none mb-4"
           >
             <option value="1week">שבוע לפני תאריך היעד</option>
             <option value="3days">3 ימים לפני תאריך היעד</option>
@@ -97,12 +118,18 @@ END:VCALENDAR`;
             <option value="daily">כל כמה ימים (מרובה)</option>
           </select>
           
-          <button onClick={handleDownloadICS} className="w-full bg-blue-600 text-white rounded-xl py-3 font-bold text-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-md">
-            <Download className="w-5 h-5" />
-            הורד קובץ יומן
-          </button>
-          <p className="text-center text-xs text-slate-500 mt-3">
-            הקובץ נתמך ע״י Google Calendar, Outlook, Apple Calendar ועוד.
+          <div className="space-y-3">
+            <button onClick={handleGoogleCalendar} className="w-full bg-red-600 text-white rounded-xl py-3 font-bold text-lg hover:bg-red-700 transition flex items-center justify-center gap-2 shadow-sm">
+              <CalendarIcon className="w-5 h-5" />
+              הוסף ל-Google Calendar
+            </button>
+            <button onClick={handleDownloadICS} className="w-full bg-blue-600 text-white rounded-xl py-3 font-bold text-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 shadow-sm">
+              <Download className="w-5 h-5" />
+              הורד ל-Apple / Outlook
+            </button>
+          </div>
+          <p className="text-center text-xs text-slate-500 mt-4">
+            * בגוגל יומן התזכורת תלויה בהגדרות ברירת המחדל של היומן שלך.
           </p>
         </div>
       </div>

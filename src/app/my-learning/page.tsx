@@ -74,11 +74,22 @@ export default function MyLearningPage() {
         if (totalChapters > 0) {
           // Calculate days remaining
           let daysRemaining = -1;
-          if (ev.shloshimDateStr) {
-            const targetDate = new Date(ev.shloshimDateStr);
-            targetDate.setHours(23, 59, 59, 999);
-            const now = new Date();
-            const diffTime = targetDate.getTime() - now.getTime();
+          let computedTargetDateStr = ev.shloshimDateStr;
+          
+          if (!computedTargetDateStr && ev.passingDate) {
+              try {
+                  const HDate = require('@hebcal/core').HDate;
+                  const passHDate = new HDate(new Date(ev.passingDate));
+                  computedTargetDateStr = passHDate.add(29, 'd').greg().toISOString();
+              } catch(e) {}
+          }
+
+          if (computedTargetDateStr) {
+            const targetDate = new Date(computedTargetDateStr);
+            const today = new Date();
+            targetDate.setHours(0, 0, 0, 0);
+            today.setHours(0, 0, 0, 0);
+            const diffTime = targetDate.getTime() - today.getTime();
             daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           }
 

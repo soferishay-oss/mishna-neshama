@@ -13,6 +13,8 @@ import { SEDARIM, TRACTATE_CHAPTERS, getHebrewChapter } from "@/lib/tractates";
 import Link from "next/link";
 import AdditionsHub from "@/components/AdditionsHub";
 import NoticeHub from "@/components/NoticeHub";
+import DailyLearningModal from "@/components/DailyLearningModal";
+import CalendarModal from "@/components/CalendarModal";
 import { downloadCSV } from "@/lib/exportUtils";
 import { generateCompletionPoster } from "@/lib/posterGenerator";
 import { DEFAULT_SYSTEM_TEXTS } from "@/lib/defaultTexts";
@@ -48,6 +50,11 @@ export default function EventPage() {
   const [adminLoginError, setAdminLoginError] = useState(false);
   
   const [isPrintingEmptyTable, setIsPrintingEmptyTable] = useState(false);
+
+  const [selectedTractateForCalendar, setSelectedTractateForCalendar] = useState<string | null>(null);
+  const [selectedTractateForDaily, setSelectedTractateForDaily] = useState<string | null>(null);
+  const [selectedTractateTotalChapters, setSelectedTractateTotalChapters] = useState(0);
+
   const [manualAssignName, setManualAssignName] = useState("");
   const [quickAssignNames, setQuickAssignNames] = useState<Record<string, string>>({});
   
@@ -938,8 +945,19 @@ export default function EventPage() {
   }
 
   let daysRemaining: number | null = null;
-  if (event?.shloshimDateStr) {
-    const targetDate = new Date(event.shloshimDateStr);
+  let computedTargetDateStr = event?.shloshimDateStr;
+  
+  // Fallback: if shloshimDateStr is missing but passingDate is available
+  if (!computedTargetDateStr && event?.passingDate) {
+      try {
+          const passHDate = new HDate(new Date(event.passingDate));
+          // Default to 30 days if no burial date
+          computedTargetDateStr = passHDate.add(29, 'd').greg().toISOString();
+      } catch(e) {}
+  }
+
+  if (computedTargetDateStr) {
+    const targetDate = new Date(computedTargetDateStr);
     const today = new Date();
     targetDate.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
@@ -1879,6 +1897,25 @@ export default function EventPage() {
           </div>
         </div>
       )}
+
+      {/* Daily Learning Modal */}
+      <DailyLearningModal 
+        isOpen={!!selectedTractateForDaily}
+        onClose={() => setSelectedTractateForDaily(null)}
+        tractate={selectedTractateForDaily || ''}
+        totalChapters={selectedTractateTotalChapters}
+        targetDateStr={event?.shloshimDateStr || event?.yahrzeitDateStr}
+        passingDateStr={event?.passingDate}
+      />
+
+      {/* Calendar Modal */}
+      <CalendarModal
+        isOpen={!!selectedTractateForCalendar}
+        onClose={() => setSelectedTractateForCalendar(null)}
+        tractate={selectedTractateForCalendar || ''}
+        event={event}
+        eventId={id as string}
+      />
     </div>
   );
 }

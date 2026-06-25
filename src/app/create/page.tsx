@@ -193,9 +193,9 @@ function CreateEvent() {
       let shloshimDateStr = "";
       let yahrzeitDateStr = "";
 
-      if (passingDateStr && burialDateStr) {
+      if (passingDateStr) {
         const pDate = new Date(passingDateStr + "T12:00:00Z");
-        const bDate = new Date(burialDateStr + "T12:00:00Z");
+        const bDate = burialDateStr ? new Date(burialDateStr + "T12:00:00Z") : pDate;
         const passHDate = new HDate(pDate);
         const burHDate = new HDate(bDate);
         const shloshimHDate = burHDate.add(29, 'd'); 

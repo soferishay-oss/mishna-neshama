@@ -338,11 +338,16 @@ export default function AdminPage() {
       const newItems: any[] = [];
       
       rows.forEach((row, i) => {
-        if (i === 0) return; // skip header
         const cells = row.querySelectorAll('td');
         if (cells.length >= 2) {
           const title = cells[0].textContent?.trim() || "ללא כותרת";
           const content = cells[1].innerHTML;
+          
+          // Skip if it looks like a header row
+          if (i === 0 && (title.includes("נושא") || cells[1].textContent?.includes("תוכן"))) {
+              return;
+          }
+
           newItems.push({
             id: Date.now().toString() + i,
             edah: activeEdah || 'all',

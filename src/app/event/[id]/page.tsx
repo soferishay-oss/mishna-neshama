@@ -455,8 +455,6 @@ export default function EventPage() {
   };
 
   const handleReleaseFullTractateByOrganizer = async (displayTractate: string) => {
-    if (!confirm(`האם אתה בטוח שברצונך לבטל את כל ההתחייבויות למסכת ${displayTractate}?`)) return;
-    
     let tractateName = displayTractate;
     let chapterIndices: number[] = [];
     if (displayTractate === "כלים (א-י)") {
@@ -493,8 +491,6 @@ export default function EventPage() {
   const handleAssignAllBulk = async () => {
     const toAssign = Object.entries(quickAssignNames).filter(([_, name]) => name.trim() !== "");
     if (toAssign.length === 0) return;
-    
-    if (!confirm(`האם לשמור ולשייך ${toAssign.length} מסכתות בבת אחת?`)) return;
 
     const updates: Record<string, any> = {};
     const promises: Promise<any>[] = [];
@@ -544,7 +540,6 @@ export default function EventPage() {
     }
     
     setQuickAssignNames({});
-    alert(`שויכו ${toAssign.length} מסכתות בהצלחה!`);
   };
 
   const fallbackCopyTextToClipboard = (text: string) => {
@@ -1491,91 +1486,69 @@ export default function EventPage() {
 
             <section className="bg-white p-5 rounded-2xl shadow-sm border border-amber-100">
               <h3 className="text-lg font-bold text-slate-800 mb-4">הקצאה ידנית מהירה של מסכתות</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-slate-50 border-b">
-                      <th className="p-3 text-right">סדר / מסכת</th>
-                      <th className="p-3 text-right">מצב נוכחי (לומדים)</th>
-                      <th className="p-3 text-right">הקצאה לשם (לומד חדש)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {SEDARIM.map((seder) => (
-                      <Fragment key={seder.name}>
-                        <tr className="bg-amber-50">
-                          <td colSpan={3} className="p-2 font-bold text-amber-800">{seder.name}</td>
-                        </tr>
-                        {seder.tractates.flatMap(tractate => {
-                           const isKelim = tractate === "כלים";
-                           const items = isKelim ? ["כלים (א-י)", "כלים (יא-כ)", "כלים (כא-ל)"] : [tractate];
-                           
-                           return items.map(displayTractate => {
-                             // Check takers
-                             let tData = tractatesData[tractate];
-                             let takersStr = "";
-                             if (tData && tData.chapters) {
-                                let takers = new Set<string>();
-                                let chapterIndices: number[] = [];
-                                if (displayTractate === "כלים (א-י)") chapterIndices = [0,1,2,3,4,5,6,7,8,9];
-                                else if (displayTractate === "כלים (יא-כ)") chapterIndices = [10,11,12,13,14,15,16,17,18,19];
-                                else if (displayTractate === "כלים (כא-ל)") chapterIndices = [20,21,22,23,24,25,26,27,28,29];
-                                else chapterIndices = Array.from({length: TRACTATE_CHAPTERS[tractate]}, (_, i) => i);
-                                
-                                chapterIndices.forEach(idx => {
-                                  if (tData.chapters[idx]?.takerName) takers.add(tData.chapters[idx].takerName);
-                                });
-                                takersStr = Array.from(takers).join(", ");
-                             }
+              <div className="space-y-6">
+                {SEDARIM.map((seder) => (
+                  <div key={seder.name} className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <h4 className="font-bold text-amber-800 mb-3 border-b border-slate-200 pb-2">{seder.name}</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {seder.tractates.flatMap(tractate => {
+                         const isKelim = tractate === "כלים";
+                         const items = isKelim ? ["כלים (א-י)", "כלים (יא-כ)", "כלים (כא-ל)"] : [tractate];
+                         
+                         return items.map(displayTractate => {
+                           let tData = tractatesData[tractate];
+                           let takersStr = "";
+                           if (tData && tData.chapters) {
+                              let takers = new Set<string>();
+                              let chapterIndices: number[] = [];
+                              if (displayTractate === "כלים (א-י)") chapterIndices = [0,1,2,3,4,5,6,7,8,9];
+                              else if (displayTractate === "כלים (יא-כ)") chapterIndices = [10,11,12,13,14,15,16,17,18,19];
+                              else if (displayTractate === "כלים (כא-ל)") chapterIndices = [20,21,22,23,24,25,26,27,28,29];
+                              else chapterIndices = Array.from({length: TRACTATE_CHAPTERS[tractate]}, (_, i) => i);
+                              
+                              chapterIndices.forEach(idx => {
+                                if (tData.chapters[idx]?.takerName) takers.add(tData.chapters[idx].takerName);
+                              });
+                              takersStr = Array.from(takers).join(", ");
+                           }
 
-                             return (
-                               <tr key={displayTractate} className="border-b border-slate-50 hover:bg-slate-50">
-                                 <td className="p-3 font-bold text-slate-700">{displayTractate}</td>
-                                 <td className="p-3 text-slate-500">
-                                   <div className="flex items-center gap-2">
-                                      {takersStr || "-"}
-                                      {takersStr && (
-                                        <button 
-                                          onClick={() => handleReleaseFullTractateByOrganizer(displayTractate)} 
-                                          className="text-red-500 hover:bg-red-50 p-1 rounded-full transition" 
-                                          title="בטל התחייבות זו"
-                                        >
-                                          <X className="w-4 h-4" />
-                                        </button>
-                                      )}
-                                   </div>
-                                 </td>
-                                 <td className="p-3">
-                                   <div className="flex items-center gap-2">
-                                     <input 
-                                       type="text" 
-                                       placeholder="שם הלומד..." 
-                                       className="border rounded-lg px-3 py-1.5 text-sm w-48"
-                                       value={quickAssignNames[displayTractate] || ""}
-                                       onChange={e => setQuickAssignNames(p => ({ ...p, [displayTractate]: e.target.value }))}
-                                     />
-                                     <button 
-                                       onClick={() => handleAssignFullTractate(displayTractate)}
-                                       disabled={!(quickAssignNames[displayTractate] || "").trim()}
-                                       className="bg-blue-600 text-white px-4 py-1.5 rounded-lg font-bold text-sm hover:bg-blue-700 disabled:opacity-50 transition"
-                                     >
-                                       שייך מסכת
-                                     </button>
-                                   </div>
-                                 </td>
-                               </tr>
-                             );
-                           });
-                        })}
-                      </Fragment>
-                    ))}
-                  </tbody>
-                </table>
+                           return (
+                             <div key={displayTractate} className="bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col gap-2">
+                               <div className="font-bold text-slate-700">{displayTractate}</div>
+                               <div className="flex items-center gap-2">
+                                 {takersStr ? (
+                                    <div className="flex items-center justify-between w-full bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100">
+                                      <span className="text-sm font-medium text-slate-700 truncate" title={takersStr}>{takersStr}</span>
+                                      <button 
+                                        onClick={() => handleReleaseFullTractateByOrganizer(displayTractate)} 
+                                        className="text-red-500 hover:bg-red-200 bg-red-100 p-1 rounded-full transition shrink-0" 
+                                        title="בטל התחייבות זו"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                 ) : (
+                                    <input 
+                                      type="text" 
+                                      placeholder="שם הלומד..." 
+                                      className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                      value={quickAssignNames[displayTractate] || ""}
+                                      onChange={e => setQuickAssignNames(p => ({ ...p, [displayTractate]: e.target.value }))}
+                                    />
+                                 )}
+                               </div>
+                             </div>
+                           );
+                         });
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="mt-4 pt-4 border-t flex justify-end">
+              <div className="mt-6 flex justify-center">
                 <button 
                   onClick={handleAssignAllBulk}
-                  className="bg-green-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-green-700 transition shadow-sm"
+                  className="bg-green-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-green-700 transition shadow-md w-full md:w-auto text-lg"
                 >
                   שמור שינויים (שייך הכל)
                 </button>

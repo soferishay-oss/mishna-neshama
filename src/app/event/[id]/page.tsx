@@ -1609,6 +1609,23 @@ export default function EventPage() {
               </div>
             </section>
 
+            <section className="bg-slate-50 p-5 rounded-2xl shadow-sm border border-slate-200">
+              <h3 className="font-bold text-slate-800 mb-4 text-lg flex items-center gap-2">
+                <Settings2 className="w-5 h-5 text-slate-600" />
+                הגדרות מתקדמות
+              </h3>
+              <div className="flex flex-col gap-3">
+                <Link href={`/create?edit=${id}`} className="w-full bg-white text-slate-700 font-bold py-3 px-4 rounded-xl hover:bg-slate-100 transition border border-slate-200 flex justify-center items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  עריכת פרטי האירוע ותאריכים
+                </Link>
+                <Link href={`/create?duplicate=${id}`} className="w-full bg-blue-50 text-blue-700 font-bold py-3 px-4 rounded-xl hover:bg-blue-100 transition border border-blue-200 flex justify-center items-center gap-2">
+                  <Copy className="w-4 h-4" />
+                  שכפול אירוע (לשנה הבאה)
+                </Link>
+              </div>
+            </section>
+
             <section className="bg-red-50 p-5 rounded-2xl shadow-sm border border-red-200">
               <h3 className="font-bold text-red-800 mb-4 text-lg flex items-center gap-2">
                 <Trash2 className="w-5 h-5" />

@@ -69,14 +69,85 @@ export default function EventPage() {
   const [showNewLearnerForm, setShowNewLearnerForm] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
+"use client";
+
+import React, { useEffect, useState, Fragment } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { ref, onValue, update, remove, get } from "firebase/database";
+import { db, isMockMode } from "@/lib/firebase";
+import { HDate } from "@hebcal/core";
+import { EventData } from "@/lib/events";
+import { useAuth } from "@/hooks/useAuth";
+import { Calendar, Users, Share2, MessageCircle, BookOpen, CheckCircle2, Trash2, Undo2, X, Link as LinkIcon, Mail, Copy, ListTree, PlayCircle, Info, Settings, Menu, Home, PlusCircle, Settings2, Briefcase, ChevronDown, Download, ImageIcon, Trophy, Flame, Printer } from "lucide-react";
+import QRCode from "react-qr-code";
+import { SEDARIM, TRACTATE_CHAPTERS, getHebrewChapter } from "@/lib/tractates";
+import Link from "next/link";
+import AdditionsHub from "@/components/AdditionsHub";
+import NoticeHub from "@/components/NoticeHub";
+import DailyLearningModal from "@/components/DailyLearningModal";
+import CalendarModal from "@/components/CalendarModal";
+import { downloadCSV } from "@/lib/exportUtils";
+import { generateCompletionPoster } from "@/lib/posterGenerator";
+import { DEFAULT_SYSTEM_TEXTS } from "@/lib/defaultTexts";
+
+function getInitials(name: string) {
+  if (!name) return "";
+  return name.split(' ').map(n => n[0]).join('. ') + '.';
+}
+
+export default function EventPage() {
+  const { id } = useParams();
+  const router = useRouter();
+  const { user } = useAuth();
+  
+  const [event, setEvent] = useState<EventData | null>(null);
+  const [tractatesData, setTractatesData] = useState<Record<string, any>>({});
+  const [loading, setLoading] = useState(true);
+  
+  const [isOrganizerRole, setIsOrganizerRole] = useState(false);
+  const [activeView, setActiveView] = useState<'learning' | 'additions' | 'notice' | 'organizer' | 'settings' | 'about'>('learning');
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [systemTexts, setSystemTexts] = useState<any>(DEFAULT_SYSTEM_TEXTS);
+  
+  const [showJoinForm, setShowJoinForm] = useState(false);
+  const [joinName, setJoinName] = useState("");
+  const [joinPhone, setJoinPhone] = useState("");
+  const [joinEmail, setJoinEmail] = useState("");
+  const [participantProfile, setParticipantProfile] = useState<any>(null);
+
+  // Admin login state
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState("");
+  const [adminLoginError, setAdminLoginError] = useState(false);
+  
+  const [selectedTractateForCalendar, setSelectedTractateForCalendar] = useState<string | null>(null);
+  const [selectedTractateForDaily, setSelectedTractateForDaily] = useState<string | null>(null);
+  const [selectedTractateTotalChapters, setSelectedTractateTotalChapters] = useState(0);
+
+  const [manualAssignName, setManualAssignName] = useState("");
+  const [quickAssignNames, setQuickAssignNames] = useState<Record<string, string>>({});
+  
+  const checkIsOrganizer = (profile: any, eventData: any) => {
+    if (!profile || !eventData) return false;
+    let matches = 0;
+    if (profile.name && eventData.organizerName && profile.name.trim() === eventData.organizerName.trim()) matches++;
+    if (profile.phone && eventData.organizerPhone && profile.phone.trim() === eventData.organizerPhone.trim()) matches++;
+    if (profile.email && eventData.organizerEmail && profile.email.trim() === eventData.organizerEmail.trim()) matches++;
+    return matches >= 2;
+  };
+
+  const [knownProfiles, setKnownProfiles] = useState<any[]>([]);
+  const [showNewLearnerForm, setShowNewLearnerForm] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+
   const [selectedTractate, setSelectedTractate] = useState<string | null>(null);
   const [showChaptersModal, setShowChaptersModal] = useState(false);
   const [selectedChapters, setSelectedChapters] = useState<number[]>([]);
 
   const [showOrganizerTractateModal, setShowOrganizerTractateModal] = useState<string | null>(null);
 
-  const [previousEvent, setPreviousEvent] = useState<any>(null);
-  const [learnedLastYear, setLearnedLastYear] = useState<string[]>([]);
+  const [pastEvents, setPastEvents] = useState<any[]>([]);
+  const [learnedPastYears, setLearnedPastYears] = useState<{yearStr: string, tractates: string[]}[]>([]);
 
   // Modals state
   const [showShareModal, setShowShareModal] = useState(false);
@@ -139,10 +210,18 @@ export default function EventPage() {
             setIsOrganizerRole(createdHere);
           }
 
-          if (data.previousEventId) {
-            const prevData = allData?.events?.[data.previousEventId];
-            if (prevData) setPreviousEvent(prevData);
+          let currentEventData = data;
+          let history = [];
+          while (currentEventData?.previousEventId) {
+            const prevData = allData?.events?.[currentEventData.previousEventId];
+            if (prevData) {
+               currentEventData = prevData;
+               history.push(currentEventData);
+            } else {
+               break;
+            }
           }
+          setPastEvents(history);
 
         if (allData?.system_texts) {
           setSystemTexts(allData.system_texts);
@@ -190,10 +269,18 @@ export default function EventPage() {
              setIsOrganizerRole(createdHere);
           }
 
-          if (data.previousEventId) {
-            const snap2 = await get(ref(db, `events/${data.previousEventId}`));
-            if (snap2.exists()) setPreviousEvent(snap2.val());
+          let currentEventData = data;
+          let history = [];
+          while (currentEventData?.previousEventId) {
+            const snap2 = await get(ref(db, `events/${currentEventData.previousEventId}`));
+            if (snap2.exists()) {
+               currentEventData = snap2.val();
+               history.push(currentEventData);
+            } else {
+               break;
+            }
           }
+          setPastEvents(history);
         } else {
           router.push("/");
         }
@@ -210,16 +297,23 @@ export default function EventPage() {
   }, [id, router]);
 
   useEffect(() => {
-    if (previousEvent && participantProfile && participantProfile.phone) {
-       const userLearned: string[] = [];
-       Object.keys(previousEvent.tractates || {}).forEach(tName => {
-         const tObj = previousEvent.tractates[tName];
-         const hasUserChapter = Object.values(tObj.chapters || {}).some((c: any) => c.takerPhone === participantProfile.phone);
-         if (hasUserChapter) userLearned.push(tName);
+    if (pastEvents.length > 0 && participantProfile && participantProfile.phone) {
+       const userLearnedHistory: {yearStr: string, tractates: string[]}[] = [];
+       pastEvents.forEach(prevEvent => {
+           const userLearned: string[] = [];
+           Object.keys(prevEvent.tractates || {}).forEach(tName => {
+             const tObj = prevEvent.tractates[tName];
+             const hasUserChapter = Object.values(tObj.chapters || {}).some((c: any) => c.takerPhone === participantProfile.phone);
+             if (hasUserChapter) userLearned.push(tName);
+           });
+           if (userLearned.length > 0) {
+               const yearStr = prevEvent.targetDateHebrew || prevEvent.shloshimDateHebrew || "בעבר";
+               userLearnedHistory.push({ yearStr, tractates: userLearned });
+           }
        });
-       setLearnedLastYear(userLearned);
+       setLearnedPastYears(userLearnedHistory);
     }
-  }, [previousEvent, participantProfile]);
+  }, [pastEvents, participantProfile]);
 
   const refreshMockData = async () => {
     if (!isMockMode) return;
@@ -1529,7 +1623,7 @@ export default function EventPage() {
                   </button>
                   <button 
                     onClick={handleExportParticipants}
-                    className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-xl font-bold text-sm hover:bg-emerald-100 transition flex items-center gap-2"
+                    className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-xl font-bold text-sm hover:emerald-100 transition flex items-center gap-2"
                   >
                     <Download className="w-4 h-4" /> הורד דוח לומדים
                   </button>

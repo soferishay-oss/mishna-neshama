@@ -17,12 +17,18 @@ export interface EventData {
   whatsappGroup: string;
   photoUrl?: string;
   
-  // Calculated
+  // Calculated or Set Targets
+  targetType?: 'shloshim' | 'yahrzeit' | 'custom';
+  targetDateStr?: string; // Gregorian ISO target
+  targetDateHebrew?: string; // Hebrew date string
+  
+  // Legacy calculated
   shloshimDateStr: string;
   yahrzeitDateStr: string;
   shloshimDateHebrew?: string;
   yahrzeitDateHebrew?: string;
   createdAt: any;
+  previousEventId?: string;
 }
 
 // Generate a random 4-5 digit code
@@ -49,7 +55,7 @@ async function generateUniqueCode(): Promise<string> {
   return code;
 }
 
-export async function createStudyEvent(data: Omit<EventData, "id" | "shloshimDateStr" | "yahrzeitDateStr" | "createdAt">, imageFile?: File | null): Promise<string> {
+export async function createStudyEvent(data: Omit<EventData, "id" | "shloshimDateStr" | "yahrzeitDateStr" | "createdAt" | "shloshimDateHebrew" | "yahrzeitDateHebrew">, imageFile?: File | null): Promise<string> {
   
   // Calculate Dates using hebcal
   const bDate = new Date(data.burialDate);
@@ -65,6 +71,20 @@ export async function createStudyEvent(data: Omit<EventData, "id" | "shloshimDat
 
   const shloshimDateHebrew = shloshimHDate.renderGematriya(true);
   const yahrzeitDateHebrew = yahrzeitHDate.renderGematriya(true);
+  
+  const shloshimDateStr = shloshimHDate.greg().toISOString();
+  const yahrzeitDateStr = yahrzeitHDate.greg().toISOString();
+
+  let targetDateStr = shloshimDateStr;
+  let targetDateHebrew = shloshimDateHebrew;
+
+  if (data.targetType === 'yahrzeit') {
+    // We expect the front-end to pass a pre-calculated custom target if it's a specific year,
+    // but if we want to default to next yahrzeit, it's easier if the frontend just calculates the exact date and passes it as custom, 
+    // OR the frontend passes `targetType: 'yahrzeit'` and a specific `targetDateStr` (we shouldn't override it here if it exists).
+    // Actually, to make it simple, we'll let the frontend pass customTargetDate via data if it's custom or specific yahrzeit year.
+    // We'll handle this in the payload construction.
+  }
 
   if (isMockMode) {
     const code = await generateUniqueCode();
@@ -82,11 +102,15 @@ export async function createStudyEvent(data: Omit<EventData, "id" | "shloshimDat
       id: code,
       photoUrl,
       showGregorian: data.showGregorian,
-      shloshimDateStr: shloshimHDate.greg().toISOString(),
-      yahrzeitDateStr: yahrzeitHDate.greg().toISOString(),
+      shloshimDateStr,
+      yahrzeitDateStr,
       shloshimDateHebrew,
       yahrzeitDateHebrew,
+      targetType: data.targetType || 'shloshim',
+      targetDateStr: data.targetType === 'custom' ? data.targetDateStr : (data.targetType === 'yahrzeit' ? data.targetDateStr || yahrzeitDateStr : shloshimDateStr),
+      targetDateHebrew: data.targetType === 'custom' ? data.targetDateHebrew : (data.targetType === 'yahrzeit' ? data.targetDateHebrew || yahrzeitDateHebrew : shloshimDateHebrew),
       deceasedTitle: data.deceasedTitle || '',
+      previousEventId: data.previousEventId || '',
       createdAt: new Date().toISOString(),
     };
     
@@ -123,11 +147,15 @@ export async function createStudyEvent(data: Omit<EventData, "id" | "shloshimDat
     ...data,
     id: code,
     photoUrl,
-    shloshimDateStr: shloshimHDate.greg().toISOString(),
-    yahrzeitDateStr: yahrzeitHDate.greg().toISOString(),
+    shloshimDateStr,
+    yahrzeitDateStr,
     shloshimDateHebrew,
     yahrzeitDateHebrew,
+    targetType: data.targetType || 'shloshim',
+    targetDateStr: data.targetType === 'custom' ? data.targetDateStr : (data.targetType === 'yahrzeit' ? data.targetDateStr || yahrzeitDateStr : shloshimDateStr),
+    targetDateHebrew: data.targetType === 'custom' ? data.targetDateHebrew : (data.targetType === 'yahrzeit' ? data.targetDateHebrew || yahrzeitDateHebrew : shloshimDateHebrew),
     deceasedTitle: data.deceasedTitle || '',
+    previousEventId: data.previousEventId || '',
     createdAt: serverTimestamp(),
   };
 

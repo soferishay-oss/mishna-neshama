@@ -75,6 +75,9 @@ export default function EventPage() {
 
   const [showOrganizerTractateModal, setShowOrganizerTractateModal] = useState<string | null>(null);
 
+  const [previousEvent, setPreviousEvent] = useState<any>(null);
+  const [learnedLastYear, setLearnedLastYear] = useState<string[]>([]);
+
   // Modals state
   const [showShareModal, setShowShareModal] = useState(false);
   const [commsTemplate, setCommsTemplate] = useState("general");
@@ -135,6 +138,12 @@ export default function EventPage() {
           } else {
             setIsOrganizerRole(createdHere);
           }
+
+          if (data.previousEventId) {
+            const prevData = allData?.events?.[data.previousEventId];
+            if (prevData) setPreviousEvent(prevData);
+          }
+
         if (allData?.system_texts) {
           setSystemTexts(allData.system_texts);
         }
@@ -180,6 +189,11 @@ export default function EventPage() {
           } else {
              setIsOrganizerRole(createdHere);
           }
+
+          if (data.previousEventId) {
+            const snap2 = await get(ref(db, `events/${data.previousEventId}`));
+            if (snap2.exists()) setPreviousEvent(snap2.val());
+          }
         } else {
           router.push("/");
         }
@@ -193,7 +207,19 @@ export default function EventPage() {
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [id]);
+  }, [id, router]);
+
+  useEffect(() => {
+    if (previousEvent && participantProfile && participantProfile.phone) {
+       const userLearned: string[] = [];
+       Object.keys(previousEvent.tractates || {}).forEach(tName => {
+         const tObj = previousEvent.tractates[tName];
+         const hasUserChapter = Object.values(tObj.chapters || {}).some((c: any) => c.takerPhone === participantProfile.phone);
+         if (hasUserChapter) userLearned.push(tName);
+       });
+       setLearnedLastYear(userLearned);
+    }
+  }, [previousEvent, participantProfile]);
 
   const refreshMockData = async () => {
     if (!isMockMode) return;
@@ -619,7 +645,7 @@ export default function EventPage() {
     const url = window.location.href;
     const title = event?.deceasedTitle ? ` ${event.deceasedTitle}` : ' ז"ל';
     const deceased = `${event?.deceasedName || ""}${title}`;
-    const targetDate = event?.shloshimDateHebrew || "";
+    const targetDate = event?.targetDateHebrew || event?.shloshimDateHebrew || "";
     
     let text = `שלום ${participantName},\n`;
     
@@ -699,10 +725,10 @@ export default function EventPage() {
     if (!event) return;
     const participantsList = withNames ? Object.keys(participantsMap) : [];
     try {
-      const title = event.deceasedTitle ? ` ${event.deceasedTitle}` : ' ז"ל';
-      const fullName = `${event.deceasedName}${title}`.trim();
-      await generateCompletionPoster(fullName, event.shloshimDateHebrew || "", participantsList);
-    } catch (e) {
+        const title = event.deceasedTitle ? ` ${event.deceasedTitle}` : ' ז"ל';
+        const fullName = participantProfile ? participantProfile.name : "משתתף";
+        await generateCompletionPoster(fullName, event.targetDateHebrew || event.shloshimDateHebrew || "", participantsList);
+      } catch (err) {
       alert("שגיאה ביצירת המודעה");
     }
   };
@@ -953,9 +979,11 @@ export default function EventPage() {
   }
 
   let daysRemaining: number | null = null;
-  let computedTargetDateStr = event?.shloshimDateStr;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  let computedTargetDateStr = event?.targetDateStr || event?.shloshimDateStr;
   
-  // Fallback: if shloshimDateStr is missing but passingDate is available
+  // Fallback: if targetDateStr is missing but passingDate is available
   if (!computedTargetDateStr && event?.passingDate) {
       try {
           const passHDate = new HDate(new Date(event.passingDate));
@@ -966,9 +994,7 @@ export default function EventPage() {
 
   if (computedTargetDateStr) {
     const targetDate = new Date(computedTargetDateStr);
-    const today = new Date();
     targetDate.setHours(0, 0, 0, 0);
-    today.setHours(0, 0, 0, 0);
     const diffTime = targetDate.getTime() - today.getTime();
     daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   }
@@ -1233,12 +1259,12 @@ export default function EventPage() {
           
           <div className="flex flex-col items-center gap-1 mt-6 text-blue-100 text-sm bg-black/10 p-3 rounded-xl backdrop-blur-sm px-6 border border-white/10">
             <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 opacity-80" />
-              <span className="font-medium text-base">יעד סיום: {event.shloshimDateHebrew || "לא נקבע"}</span>
+              <Calendar className="w-5 h-5 opacity-75" />
+              <span className="font-medium text-base">יעד סיום: {event.targetDateHebrew || event.shloshimDateHebrew || "לא נקבע"}</span>
             </div>
-            {event.showGregorian && (
-              <span className="text-xs opacity-75">{new Date(event.shloshimDateStr).toLocaleDateString("he-IL")}</span>
-            )}
+            {event.targetDateStr || event.shloshimDateStr ? (
+              <span className="text-xs opacity-75">{new Date(event.targetDateStr || event.shloshimDateStr).toLocaleDateString("he-IL")}</span>
+            ) : null}
             <div className="mt-2 pt-2 border-t border-white/20 flex items-center justify-center gap-2 w-full font-mono text-base font-bold tracking-widest bg-white/10 rounded-lg py-1">
               קוד אירוע: {id}
             </div>
@@ -1604,7 +1630,21 @@ export default function EventPage() {
         )}
 
         {activeView === 'learning' && (
-          <div className="space-y-6">
+          <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+              {learnedLastYear.length > 0 && !isOrganizerRole && (
+                <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl mb-6 shadow-sm flex items-start gap-4 transition-all">
+                  <div className="bg-blue-100 p-2 rounded-full text-blue-700 mt-1">
+                    <Undo2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-blue-900 text-lg mb-1">למדת באירוע הקודם!</h4>
+                    <p className="text-sm text-blue-800 leading-relaxed">
+                      בפעם הקודמת למדת את: <span className="font-bold bg-blue-100 px-2 py-0.5 rounded-md mx-1">{learnedLastYear.join(", ")}</span><br/>
+                      נשמח מאוד אם תזכה גם הפעם לקחת את אותן המסכתות להצלחת ועליית נשמת הנפטר/ת.
+                    </p>
+                  </div>
+                </div>
+              )}
             {daysRemaining !== null && (
               <div className="flex justify-center mb-6">
                 <div className="bg-white text-blue-800 px-6 py-2 rounded-full font-bold shadow-lg flex items-center gap-2">
@@ -1716,7 +1756,7 @@ export default function EventPage() {
                          <div className="text-center mb-4">
                            <div className="text-sm mb-1">בס"ד</div>
                            <h2 className="text-2xl font-bold mb-1">לימוד משניות לעילוי נשמת {event?.deceasedName} {event?.deceasedTitle || ''}</h2>
-                           <div className="text-lg mb-1">נא לסיים עד תאריך: {event?.shloshimDateHebrew || "___________"}</div>
+                           <div className="text-lg mb-1">נא לסיים עד תאריך: {event?.targetDateHebrew || event?.shloshimDateHebrew || "___________"}</div>
                            <div className="text-lg font-bold">ת.נ.צ.ב.ה.</div>
                          </div>
                          
@@ -1950,7 +1990,7 @@ export default function EventPage() {
           isOpen={!!selectedTractateForDaily}
           onClose={() => setSelectedTractateForDaily(null)}
           learningRows={myLearningRows}
-          targetDateStr={event?.shloshimDateStr || event?.yahrzeitDateStr}
+          targetDateStr={event?.targetDateStr || event?.shloshimDateStr || event?.yahrzeitDateStr}
           passingDateStr={event?.passingDate}
         />
       )}

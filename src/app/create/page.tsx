@@ -79,9 +79,17 @@ function CreateEvent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams?.get("edit");
+  const duplicateId = searchParams?.get("duplicate");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [dateMode, setDateMode] = useState<"hebrew" | "gregorian">("hebrew");
+  
+  const currentYear = new HDate().getFullYear();
+  const [targetType, setTargetType] = useState<"shloshim" | "yahrzeit" | "custom">("shloshim");
+  const [yahrzeitYear, setYahrzeitYear] = useState<number>(currentYear);
+  const [customTargetDate, setCustomTargetDate] = useState({ day: 1, month: "Tishrei", year: currentYear });
+  const [previousEventId, setPreviousEventId] = useState<string>("");
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   
@@ -106,7 +114,6 @@ function CreateEvent() {
   const [gregBurialDate, setGregBurialDate] = useState("");
 
   // Hebrew dates
-  const currentYear = new HDate().getFullYear();
   const [hebPassingDate, setHebPassingDate] = useState({ day: 1, month: "Tishrei", year: currentYear });
   const [hebBurialDate, setHebBurialDate] = useState({ day: 1, month: "Tishrei", year: currentYear });
 
@@ -120,18 +127,19 @@ function CreateEvent() {
     }
   };
 
-  // Load existing data if editing
+  // Load existing data if editing or duplicating
   useEffect(() => {
-    if (editId) {
-      setIsEditMode(true);
+    const fetchId = editId || duplicateId;
+    if (fetchId) {
+      if (editId) setIsEditMode(true);
       const fetchEvent = async () => {
         let ev: any = null;
         if (isMockMode) {
           const res = await fetch(`/api/mockdb`);
           const data = await res.json();
-          ev = data?.events?.[editId];
+          ev = data?.events?.[fetchId];
         } else {
-          const snap = await get(ref(db, `events/${editId}`));
+          const snap = await get(ref(db, `events/${fetchId}`));
           if (snap.exists()) ev = snap.val();
         }
 
@@ -165,11 +173,28 @@ function CreateEvent() {
             setHebPassingDate({ day: passHDate.getDate(), month: passHDate.getMonthName(), year: passHDate.getFullYear() });
             setHebBurialDate({ day: burHDate.getDate(), month: burHDate.getMonthName(), year: burHDate.getFullYear() });
           }
+          
+          if (duplicateId) {
+            setPreviousEventId(duplicateId);
+            setTargetType('yahrzeit');
+            setYahrzeitYear(currentYear);
+          } else {
+            if (ev.targetType) setTargetType(ev.targetType);
+            if (ev.previousEventId) setPreviousEventId(ev.previousEventId);
+            
+            if (ev.targetDateStr && ev.targetType === 'custom') {
+              const custHDate = new HDate(new Date(ev.targetDateStr + "T12:00:00Z"));
+              setCustomTargetDate({ day: custHDate.getDate(), month: custHDate.getMonthName(), year: custHDate.getFullYear() });
+            } else if (ev.targetDateStr && ev.targetType === 'yahrzeit') {
+              const yHDate = new HDate(new Date(ev.targetDateStr + "T12:00:00Z"));
+              setYahrzeitYear(yHDate.getFullYear());
+            }
+          }
         }
       };
       fetchEvent();
     }
-  }, [editId]);
+  }, [editId, duplicateId, currentYear]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -192,18 +217,31 @@ function CreateEvent() {
       let yahrzeitDateHebrew = "";
       let shloshimDateStr = "";
       let yahrzeitDateStr = "";
+      let targetDateStr = "";
+      let targetDateHebrew = "";
 
       if (passingDateStr) {
         const pDate = new Date(passingDateStr + "T12:00:00Z");
         const bDate = burialDateStr ? new Date(burialDateStr + "T12:00:00Z") : pDate;
         const passHDate = new HDate(pDate);
         const burHDate = new HDate(bDate);
+        
         const shloshimHDate = burHDate.add(29, 'd'); 
         const yahrzeitHDate = passHDate.add(1, 'y');
         shloshimDateHebrew = shloshimHDate.renderGematriya(true);
         yahrzeitDateHebrew = yahrzeitHDate.renderGematriya(true);
         shloshimDateStr = shloshimHDate.greg().toISOString();
         yahrzeitDateStr = yahrzeitHDate.greg().toISOString();
+        
+        if (targetType === 'custom') {
+           const hCustom = new HDate(customTargetDate.day, customTargetDate.month, customTargetDate.year);
+           targetDateStr = hCustom.greg().toISOString();
+           targetDateHebrew = hCustom.renderGematriya(true);
+        } else if (targetType === 'yahrzeit') {
+           const hYahrzeit = new HDate(passHDate.getDate(), passHDate.getMonthName(), yahrzeitYear);
+           targetDateStr = hYahrzeit.greg().toISOString();
+           targetDateHebrew = hYahrzeit.renderGematriya(true);
+        }
       }
 
       const payload = {
@@ -211,6 +249,10 @@ function CreateEvent() {
         deceasedTitle: deceasedTitleOption === 'אחר' ? customDeceasedTitle : (deceasedTitleOption === 'ללא תוספת' ? '' : deceasedTitleOption),
         passingDate: passingDateStr,
         burialDate: burialDateStr,
+        targetType,
+        targetDateStr,
+        targetDateHebrew,
+        previousEventId,
         shloshimDateStr,
         yahrzeitDateStr,
         shloshimDateHebrew,
@@ -421,7 +463,7 @@ function CreateEvent() {
               </div>
             )}
             
-            <div className="flex items-center gap-3 pt-2">
+            <div className="flex items-center gap-3 pt-2 mb-6">
               <input 
                 type="checkbox" 
                 id="showGregorian" 
@@ -432,6 +474,46 @@ function CreateEvent() {
               <label htmlFor="showGregorian" className="text-sm text-slate-700">הצג תאריכים לועזיים במסך האירוע</label>
             </div>
 
+            <div className="border-t border-slate-100 pt-6">
+              <label className="block text-sm font-medium text-slate-700 mb-2">תאריך יעד לסיום הלמידה</label>
+              <select 
+                value={targetType}
+                onChange={(e) => setTargetType(e.target.value as any)}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"
+              >
+                <option value="shloshim">יום השלושים (30 יום מהקבורה)</option>
+                <option value="yahrzeit">אזכרה שנתית (יארצייט)</option>
+                <option value="custom">תאריך מותאם אישית</option>
+              </select>
+
+              {targetType === 'yahrzeit' && (
+                <div className="mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-top-2">
+                  <label className="block text-sm font-medium text-slate-700 mb-2">לאיזו שנה עברית האזכרה מיועדת?</label>
+                  <select 
+                    value={yahrzeitYear}
+                    onChange={(e) => setYahrzeitYear(parseInt(e.target.value))}
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                  >
+                    {[0, 1, 2, 3, 4, 5].map(offset => (
+                      <option key={currentYear + offset} value={currentYear + offset}>
+                        {gematriya(currentYear + offset)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {targetType === 'custom' && (
+                <div className="mb-4 bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm animate-in fade-in slide-in-from-top-2">
+                  <HebrewDateSelector 
+                    label="תאריך סיום רצוי"
+                    value={customTargetDate}
+                    onChange={setCustomTargetDate}
+                    years={years}
+                  />
+                </div>
+              )}
+            </div>
           </section>
 
           <section className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 space-y-4">

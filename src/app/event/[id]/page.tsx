@@ -968,9 +968,9 @@ export default function EventPage() {
     const chapters = tractatesData[t]?.chapters || {};
     Object.keys(chapters).forEach(ch => {
       const data = chapters[ch];
-      if (data.takerName) {
+      if (data?.takerName) {
         if (!participantsMap[data.takerName]) {
-          participantsMap[data.takerName] = { phone: data.takerPhone, email: data.takerEmail, tractates: new Set() };
+          participantsMap[data.takerName] = { phone: data?.takerPhone, email: data?.takerEmail, tractates: new Set() };
         }
         participantsMap[data.takerName].tractates.add(t);
       }
@@ -994,7 +994,7 @@ export default function EventPage() {
       const ownedChapters: number[] = [];
       Object.keys(chapters).forEach(chIdxStr => {
         const chIdx = parseInt(chIdxStr, 10);
-        if (chapters[chIdx].takerName === participantProfile.name && chapters[chIdx].takerPhone === participantProfile.phone) {
+        if (chapters[chIdx]?.takerName === participantProfile.name && chapters[chIdx]?.takerPhone === participantProfile.phone) {
           ownedChapters.push(chIdx);
         }
       });
@@ -1005,7 +1005,7 @@ export default function EventPage() {
         const uncompletedChapters: number[] = [];
         
         ownedChapters.forEach(ch => {
-          if (chapters[ch].isCompleted) {
+          if (chapters[ch]?.isCompleted) {
             completedCount++;
           } else {
             uncompletedChapters.push(ch);
@@ -2102,12 +2102,12 @@ export default function EventPage() {
                 const groups: Record<string, {takerName: string, takerPhone: string, isCompleted: boolean, chapters: number[]}> = {};
                 chaptersKeys.forEach(chNum => {
                    const cData = chaptersMap[chNum];
-                   const key = `${cData.takerName}_${cData.takerPhone || ''}_${cData.isCompleted}`;
+                   const key = `${cData?.takerName}_${cData?.takerPhone || ''}_${cData?.isCompleted}`;
                    if (!groups[key]) {
                       groups[key] = {
-                         takerName: cData.takerName,
-                         takerPhone: cData.takerPhone,
-                         isCompleted: cData.isCompleted,
+                         takerName: cData?.takerName,
+                         takerPhone: cData?.takerPhone,
+                         isCompleted: cData?.isCompleted,
                          chapters: []
                       };
                    }

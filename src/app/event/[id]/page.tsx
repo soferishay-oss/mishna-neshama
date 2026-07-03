@@ -1421,6 +1421,12 @@ export default function EventPage() {
             
             <div className="flex-1 overflow-y-auto py-4">
               <div className="px-4 space-y-2">
+                <Link href="/my-learning" className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition text-indigo-700 bg-indigo-50 hover:bg-indigo-100">
+                  <User className="w-5 h-5" /> האזור האישי שלי
+                </Link>
+                
+                <div className="my-4 border-t border-slate-100"></div>
+
                 {/* Active for Everyone */}
                 <button onClick={() => handleSetView('learning')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeView === 'learning' ? 'bg-blue-100 text-blue-700' : 'text-slate-700 hover:bg-slate-50'}`}>
                   <BookOpen className="w-5 h-5" /> הלימוד שלי

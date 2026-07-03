@@ -262,7 +262,7 @@ export default function EventPage() {
            const userLearned: string[] = [];
            Object.keys(prevEvent.tractates || {}).forEach(tName => {
              const tObj = prevEvent.tractates[tName];
-             const hasUserChapter = Object.values(tObj.chapters || {}).some((c: any) => c.takerPhone === participantProfile.phone);
+             const hasUserChapter = Object.values(tObj.chapters || {}).some((c: any) => c?.takerPhone === participantProfile.phone);
              if (hasUserChapter) userLearned.push(tName);
            });
            if (userLearned.length > 0) {
@@ -447,7 +447,7 @@ export default function EventPage() {
     
     Object.keys(chaptersObj).forEach(ch => {
         const c = chaptersObj[ch];
-        if (participantProfile && c.takerName === participantProfile.name && c.takerPhone === participantProfile.phone && !c.isCompleted) {
+        if (participantProfile && c?.takerName === participantProfile.name && c?.takerPhone === participantProfile.phone && !c?.isCompleted) {
             if (isMockMode) {
               deletePromises.push(fetch(`/api/mockdb?path=events/${id}/tractates/${tractateName}/chapters/${ch}`, { method: 'DELETE' }));
             } else {
@@ -754,13 +754,13 @@ export default function EventPage() {
       const chaps = tractatesData[tractateName]?.chapters || {};
       Object.keys(chaps).forEach(ch => {
         const c = chaps[ch];
-        if (c.takerName) {
+        if (c?.takerName) {
           dataToExport.push({
-            "שם המשתתף": c.takerName,
-            "טלפון": c.takerPhone || "",
+            "שם המשתתף": c?.takerName,
+            "טלפון": c?.takerPhone || "",
             "מסכת": tractateName,
             "פרק": getHebrewChapter(parseInt(ch, 10)),
-            "הושלם": c.isCompleted ? "כן" : "לא",
+            "הושלם": c?.isCompleted ? "כן" : "לא",
             "תאריך בחירה": new Date(c.takenAt).toLocaleDateString("he-IL")
           });
         }
@@ -955,8 +955,8 @@ export default function EventPage() {
     Object.keys(chaptersObj).forEach((k) => {
       if (parseInt(k) < total) {
         const c = chaptersObj[k] as any;
-        if (c.isCompleted) totalChaptersCompleted++;
-        if (c.takerName) takenCountNum++;
+        if (c?.isCompleted) totalChaptersCompleted++;
+        if (c?.takerName) takenCountNum++;
       }
     });
   });
@@ -1062,13 +1062,13 @@ export default function EventPage() {
     Object.keys(tractatesData).forEach(t => {
         const chObj = tractatesData[t]?.chapters || {};
         Object.values(chObj).forEach((c: any) => {
-            if (c.takerName) {
-                if (!takersMapGlobal[c.takerName]) {
-                    takersMapGlobal[c.takerName] = { phone: c.takerPhone, owned: 0, completed: 0, tractates: new Set() };
+            if (c?.takerName) {
+                if (!takersMapGlobal[c?.takerName]) {
+                    takersMapGlobal[c?.takerName] = { phone: c?.takerPhone, owned: 0, completed: 0, tractates: new Set() };
                 }
-                takersMapGlobal[c.takerName].owned++;
-                if (c.isCompleted) takersMapGlobal[c.takerName].completed++;
-                takersMapGlobal[c.takerName].tractates.add(t);
+                takersMapGlobal[c?.takerName].owned++;
+                if (c?.isCompleted) takersMapGlobal[c?.takerName].completed++;
+                takersMapGlobal[c?.takerName].tractates.add(t);
             }
         });
     });
@@ -1089,11 +1089,11 @@ export default function EventPage() {
           Object.keys(pe.tractates).forEach(tName => {
             const chaps = pe.tractates[tName]?.chapters || {};
             Object.values(chaps).forEach((c: any) => {
-              if (c.takerPhone && c.takerName) {
-                if (!past.has(c.takerPhone)) {
-                   past.set(c.takerPhone, { name: c.takerName, phone: c.takerPhone, tractates: [tName] });
+              if (c?.takerPhone && c?.takerName) {
+                if (!past.has(c?.takerPhone)) {
+                   past.set(c?.takerPhone, { name: c?.takerName, phone: c?.takerPhone, tractates: [tName] });
                 } else {
-                   const p = past.get(c.takerPhone)!;
+                   const p = past.get(c?.takerPhone)!;
                    if (!p.tractates.includes(tName)) p.tractates.push(tName);
                 }
               }
@@ -1211,9 +1211,9 @@ export default function EventPage() {
                 const takersSet = new Set<string>();
                 let isTakenByMe = false;
                 Object.values(chaptersObj).forEach((c: any) => {
-                  if (c.isCompleted) completedCount++;
-                  if (c.takerName) takersSet.add(c.takerName);
-                  if (participantProfile && c.takerName === participantProfile.name && c.takerPhone === participantProfile.phone) {
+                  if (c?.isCompleted) completedCount++;
+                  if (c?.takerName) takersSet.add(c?.takerName);
+                  if (participantProfile && c?.takerName === participantProfile.name && c?.takerPhone === participantProfile.phone) {
                     isTakenByMe = true;
                   }
                 });
@@ -2020,7 +2020,7 @@ export default function EventPage() {
               {Array.from({ length: TRACTATE_CHAPTERS[selectedTractate] }).map((_, i) => {
                 const isTaken = !!tractatesData[selectedTractate]?.chapters?.[i];
                 const c = isTaken ? tractatesData[selectedTractate].chapters[i] : null;
-                const isTakenByMe = participantProfile && isTaken && c.takerName === participantProfile.name && c.takerPhone === participantProfile.phone;
+                const isTakenByMe = participantProfile && isTaken && c?.takerName === participantProfile.name && c?.takerPhone === participantProfile.phone;
                 const isSelected = selectedChapters.includes(i);
                 return (
                   <div key={i} onClick={() => { if (!isTaken) toggleChapterSelection(i); else if (isTakenByMe) handleReleaseChapter(selectedTractate, i); }} className={`border rounded-xl p-3 text-center transition ${isTakenByMe ? "bg-amber-100 border-amber-300" : isTaken ? "bg-slate-100 border-slate-200 opacity-60" : isSelected ? "bg-blue-100 border-blue-500" : "bg-white"}`}>

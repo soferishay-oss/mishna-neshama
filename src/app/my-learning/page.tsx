@@ -51,17 +51,17 @@ export default function MyLearningPage() {
             if (tractateObj.chapters) {
               const myChaps: { ch: number, completed: boolean }[] = [];
               Object.entries(tractateObj.chapters).forEach(([chIndex, chapterObj]: any) => {
-                const takerPhone = (chapterObj.takerPhone || "").replace(/\D/g, '');
+                const takerPhone = (chapterObj?.takerPhone || "").replace(/\D/g, '');
                 const hasPhoneMatch = cleanPhone && takerPhone === cleanPhone;
-                const hasNameMatch = profile?.name && chapterObj.takerName === profile.name;
+                const hasNameMatch = profile?.name && chapterObj?.takerName === profile.name;
                 
                 if (hasPhoneMatch || (hasNameMatch && hasPhoneMatch)) {
                   myChaps.push({
                     ch: parseInt(chIndex, 10),
-                    completed: !!chapterObj.isCompleted
+                    completed: !!chapterObj?.isCompleted
                   });
                   totalChapters++;
-                  if (chapterObj.isCompleted) completedChapters++;
+                  if (chapterObj?.isCompleted) completedChapters++;
                 }
               });
               

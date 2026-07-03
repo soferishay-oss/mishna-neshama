@@ -193,8 +193,8 @@ export default function AdminPage() {
       Object.values(tractates).forEach((tObj: any) => {
         const chapters = tObj.chapters || {};
         Object.values(chapters).forEach((c: any) => {
-          if (c.takerName) parts.add(c.takerName + c.takerPhone);
-          if (c.isCompleted) chCount++;
+          if (c?.takerName) parts.add(c?.takerName + c?.takerPhone);
+          if (c?.isCompleted) chCount++;
         });
       });
     });
@@ -292,8 +292,8 @@ export default function AdminPage() {
         Object.keys(tObj.chapters).forEach(k => {
           if (parseInt(k) < chCount) {
             const c = tObj.chapters[k];
-            if (c.takerName) takenChapters++;
-            if (c.isCompleted) completedChapters++;
+            if (c?.takerName) takenChapters++;
+            if (c?.isCompleted) completedChapters++;
           }
         });
       }

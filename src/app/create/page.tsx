@@ -204,11 +204,16 @@ function CreateEvent() {
       let passingDateStr = "";
       let burialDateStr = "";
 
+      const toSafeDateStr = (hDate: any) => {
+        const g = hDate.greg();
+        return `${g.getFullYear()}-${String(g.getMonth() + 1).padStart(2, '0')}-${String(g.getDate()).padStart(2, '0')}`;
+      };
+
       if (dateMode === "hebrew") {
         const hPassing = new HDate(hebPassingDate.day, hebPassingDate.month, hebPassingDate.year);
         const hBurial = new HDate(hebBurialDate.day, hebBurialDate.month, hebBurialDate.year);
-        passingDateStr = hPassing.greg().toISOString().split('T')[0];
-        burialDateStr = hBurial.greg().toISOString().split('T')[0];
+        passingDateStr = toSafeDateStr(hPassing);
+        burialDateStr = toSafeDateStr(hBurial);
       } else {
         passingDateStr = gregPassingDate;
         burialDateStr = gregBurialDate;
@@ -231,16 +236,16 @@ function CreateEvent() {
         const yahrzeitHDate = passHDate.add(1, 'y');
         shloshimDateHebrew = shloshimHDate.renderGematriya(true);
         yahrzeitDateHebrew = yahrzeitHDate.renderGematriya(true);
-        shloshimDateStr = shloshimHDate.greg().toISOString();
-        yahrzeitDateStr = yahrzeitHDate.greg().toISOString();
+        shloshimDateStr = `${toSafeDateStr(shloshimHDate)}T12:00:00Z`;
+        yahrzeitDateStr = `${toSafeDateStr(yahrzeitHDate)}T12:00:00Z`;
         
         if (targetType === 'custom') {
            const hCustom = new HDate(customTargetDate.day, customTargetDate.month, customTargetDate.year);
-           targetDateStr = hCustom.greg().toISOString();
+           targetDateStr = `${toSafeDateStr(hCustom)}T12:00:00Z`;
            targetDateHebrew = hCustom.renderGematriya(true);
         } else if (targetType === 'yahrzeit') {
            const hYahrzeit = new HDate(passHDate.getDate(), passHDate.getMonthName(), yahrzeitYear);
-           targetDateStr = hYahrzeit.greg().toISOString();
+           targetDateStr = `${toSafeDateStr(hYahrzeit)}T12:00:00Z`;
            targetDateHebrew = hYahrzeit.renderGematriya(true);
         }
       }

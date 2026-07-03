@@ -86,7 +86,7 @@ export default function MyLearningPage() {
         if (totalChapters > 0 || isOrganizer) {
           // Calculate days remaining
           let daysRemaining = -1;
-          let computedTargetDateStr = ev.shloshimDateStr;
+          let computedTargetDateStr = ev.targetDateStr || ev.shloshimDateStr;
           
           if (!computedTargetDateStr && ev.passingDate) {
               try {
@@ -110,7 +110,7 @@ export default function MyLearningPage() {
           userEvents.push({
             id: eventId,
             deceasedName: `${ev.deceasedName} ${ev.deceasedTitle || ''}`.trim(),
-            targetDateHebrew: ev.shloshimDateHebrew,
+            targetDateHebrew: ev.targetDateHebrew || ev.shloshimDateHebrew,
             daysRemaining,
             tractates: userTractates,
             totalChapters,

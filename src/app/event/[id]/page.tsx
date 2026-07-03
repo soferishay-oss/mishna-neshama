@@ -89,26 +89,26 @@ export default function EventPage() {
   useEffect(() => {
     let organizedEvents: string[] = [];
     try { 
-      const parsed = JSON.parse((function(k){try{return localStorage.getItem(k);}catch(e){return null;}})() || "[]"); 
+      const parsed = JSON.parse(localStorage.getItem("organizedEvents") || "[]"); 
       if (Array.isArray(parsed)) organizedEvents = parsed;
     } catch(e) {}
     const createdHere = organizedEvents.includes(id);
     setIsOrganizerRole(createdHere);
 
-    const savedView = (function(k){try{return localStorage.getItem(k);}catch(e){return null;}})();
+    const savedView = localStorage.getItem(`activeView_${id}`);
     if (savedView) {
       setActiveView(savedView as any);
     } else if (createdHere) {
       setActiveView('organizer');
     }
 
-    const profileStr = (function(k){try{return localStorage.getItem(k);}catch(e){return null;}})();
+    const profileStr = localStorage.getItem("participantProfile");
     let profile = null;
-    try { profile = profileStr ? JSON.parse(profileStr) : null; } catch(e) { (function(k){try{localStorage.removeItem(k);}catch(e){}})(); }
+    try { profile = profileStr ? JSON.parse(profileStr) : null; } catch(e) { localStorage.removeItem("participantProfile"); }
     
     let savedProfiles: any[] = [];
     try { 
-      const parsed = JSON.parse((function(k){try{return localStorage.getItem(k);}catch(e){return null;}})() || "[]"); 
+      const parsed = JSON.parse(localStorage.getItem("knownProfiles") || "[]"); 
       if (Array.isArray(parsed)) savedProfiles = parsed;
     } catch(e) {}
     setKnownProfiles(savedProfiles);
@@ -143,7 +143,7 @@ export default function EventPage() {
         setEvent(data);
           setTractatesData(data.tractates || {});
           
-          const profileStr = (function(k){try{return localStorage.getItem(k);}catch(e){return null;}})();
+          const profileStr = localStorage.getItem("participantProfile");
           if (profileStr) {
             try {
               const profile = JSON.parse(profileStr);
@@ -205,14 +205,14 @@ export default function EventPage() {
              return;
           }
 
-          const profileStr = (function(k){try{return localStorage.getItem(k);}catch(e){return null;}})();
+          const profileStr = localStorage.getItem("participantProfile");
           if (profileStr) {
             try {
               const profile = JSON.parse(profileStr);
               const isNowOrg = checkIsOrganizer(profile, data);
               setIsOrganizerRole(isNowOrg);
               if (isNowOrg) {
-                if (!(function(k){try{return localStorage.getItem(k);}catch(e){return null;}})()) {
+                if (!localStorage.getItem(`activeView_${id}`)) {
                   setActiveView('organizer');
                 }
               }
@@ -291,7 +291,7 @@ export default function EventPage() {
 
   const handleSetView = (view: typeof activeView) => {
     setActiveView(view);
-    (function(k,v){try{localStorage.setItem(k,v);}catch(e){}})(, );
+    localStorage.setItem(`activeView_${id}`, view);
     setShowSidebar(false);
   };
 
@@ -299,7 +299,7 @@ export default function EventPage() {
     e.preventDefault();
     const correctPassword = systemTexts?.adminPassword || DEFAULT_SYSTEM_TEXTS.adminPassword;
     if (adminPasswordInput === correctPassword) {
-      (function(k,v){try{sessionStorage.setItem(k,v);}catch(e){}})(, );
+      sessionStorage.setItem('adminAuth', 'true');
       router.push('/admin');
     } else {
       setAdminLoginError(true);
@@ -312,10 +312,10 @@ export default function EventPage() {
     
     const profile = { name: joinName, phone: joinPhone, email: joinEmail };
     const updatedProfiles = [...knownProfiles.filter((p: any) => p.phone !== joinPhone), profile];
-    (function(k,v){try{localStorage.setItem(k,v);}catch(e){}})(, ));
+    localStorage.setItem("knownProfiles", JSON.stringify(updatedProfiles));
     setKnownProfiles(updatedProfiles);
     
-    (function(k,v){try{localStorage.setItem(k,v);}catch(e){}})(, ));
+    localStorage.setItem("participantProfile", JSON.stringify(profile));
     setParticipantProfile(profile);
     
     if (event) {
@@ -484,11 +484,11 @@ export default function EventPage() {
     
     let organizedEvents: string[] = [];
     try { 
-      const parsed = JSON.parse((function(k){try{return localStorage.getItem(k);}catch(e){return null;}})() || "[]"); 
+      const parsed = JSON.parse(localStorage.getItem("organizedEvents") || "[]"); 
       if (Array.isArray(parsed)) organizedEvents = parsed;
     } catch(e) {}
     const updatedEvents = organizedEvents.filter((eId: string) => eId !== id);
-    (function(k,v){try{localStorage.setItem(k,v);}catch(e){}})(, ));
+    localStorage.setItem("organizedEvents", JSON.stringify(updatedEvents));
     
     router.push("/");
   };
@@ -861,7 +861,7 @@ export default function EventPage() {
                   key={idx}
                   type="button"
                   onClick={() => {
-                    (function(k,v){try{localStorage.setItem(k,v);}catch(e){}})(, ));
+                    localStorage.setItem("participantProfile", JSON.stringify(p));
                     setParticipantProfile(p);
                     if (event) {
                       const isNowOrg = p.phone === event.organizerPhone;
@@ -968,11 +968,11 @@ export default function EventPage() {
     const chapters = tractatesData[t]?.chapters || {};
     Object.keys(chapters).forEach(ch => {
       const data = chapters[ch];
-      if (data?.takerName) {
-        if (!participantsMap[data?.takerName]) {
-          participantsMap[data?.takerName] = { phone: data?.takerPhone, email: data?.takerEmail, tractates: new Set() };
+      if (data.takerName) {
+        if (!participantsMap[data.takerName]) {
+          participantsMap[data.takerName] = { phone: data.takerPhone, email: data.takerEmail, tractates: new Set() };
         }
-        participantsMap[data?.takerName].tractates.add(t);
+        participantsMap[data.takerName].tractates.add(t);
       }
     });
   });
@@ -994,7 +994,7 @@ export default function EventPage() {
       const ownedChapters: number[] = [];
       Object.keys(chapters).forEach(chIdxStr => {
         const chIdx = parseInt(chIdxStr, 10);
-        if (chapters[chIdx]?.takerName === participantProfile.name && chapters[chIdx]?.takerPhone === participantProfile.phone) {
+        if (chapters[chIdx].takerName === participantProfile.name && chapters[chIdx].takerPhone === participantProfile.phone) {
           ownedChapters.push(chIdx);
         }
       });
@@ -1005,7 +1005,7 @@ export default function EventPage() {
         const uncompletedChapters: number[] = [];
         
         ownedChapters.forEach(ch => {
-          if (chapters[ch]?.isCompleted) {
+          if (chapters[ch].isCompleted) {
             completedCount++;
           } else {
             uncompletedChapters.push(ch);
@@ -1016,7 +1016,7 @@ export default function EventPage() {
         let nextMishnahLabel = "";
         if (nextChapterToLearn !== null) {
           const bookmarkKey = `bookmark_${id}_${t}_${nextChapterToLearn}`;
-          const savedIndexStr = typeof window !== 'undefined' ? (function(k){try{return localStorage.getItem(k);}catch(e){return null;}})() : null;
+          const savedIndexStr = typeof window !== 'undefined' ? localStorage.getItem(bookmarkKey) : null;
           if (savedIndexStr !== null) {
             const savedIndex = parseInt(savedIndexStr, 10);
             nextMishnahLabel = ` משנה ${getHebrewChapter(savedIndex + 1)}`;
@@ -1406,7 +1406,7 @@ export default function EventPage() {
                       <button
                         key={idx}
                         onClick={() => {
-                          (function(k,v){try{localStorage.setItem(k,v);}catch(e){}})(, ));
+                          localStorage.setItem("participantProfile", JSON.stringify(p));
                           setParticipantProfile(p);
                           if (event) {
                             const isNowOrg = checkIsOrganizer(p, event);
@@ -1431,7 +1431,7 @@ export default function EventPage() {
                   <button
                     onClick={() => {
                       setShowProfileDropdown(false);
-                      (function(k){try{localStorage.removeItem(k);}catch(e){}})();
+                      localStorage.removeItem("participantProfile");
                       setParticipantProfile(null);
                       setIsOrganizerRole(false);
                       setShowNewLearnerForm(true);
@@ -2102,12 +2102,12 @@ export default function EventPage() {
                 const groups: Record<string, {takerName: string, takerPhone: string, isCompleted: boolean, chapters: number[]}> = {};
                 chaptersKeys.forEach(chNum => {
                    const cData = chaptersMap[chNum];
-                   const key = `${cData?.takerName}_${cData?.takerPhone || ''}_${cData?.isCompleted}`;
+                   const key = `${cData.takerName}_${cData.takerPhone || ''}_${cData.isCompleted}`;
                    if (!groups[key]) {
                       groups[key] = {
-                         takerName: cData?.takerName,
-                         takerPhone: cData?.takerPhone,
-                         isCompleted: cData?.isCompleted,
+                         takerName: cData.takerName,
+                         takerPhone: cData.takerPhone,
+                         isCompleted: cData.isCompleted,
                          chapters: []
                       };
                    }

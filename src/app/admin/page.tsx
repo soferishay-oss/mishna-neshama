@@ -44,7 +44,7 @@ export default function AdminPage() {
 
   useEffect(() => {
     // Check if authenticated from homepage prompt or direct visit
-    if ((function(k){try{return sessionStorage.getItem(k);}catch(e){return null;}})() === 'true') {
+    if (sessionStorage.getItem('adminAuth') === 'true') {
       setIsAuthenticated(true);
       loadData();
     } else {
@@ -70,7 +70,7 @@ export default function AdminPage() {
       }
 
       if (pass === adminPassword) {
-        (function(k,v){try{sessionStorage.setItem(k,v);}catch(e){}})(, );
+        sessionStorage.setItem('adminAuth', 'true');
         setIsAuthenticated(true);
         loadData();
       } else {
@@ -219,7 +219,7 @@ export default function AdminPage() {
   };
 
   const handleLogout = () => {
-    (function(k){try{sessionStorage.removeItem(k);}catch(e){}})();
+    sessionStorage.removeItem('adminAuth');
     window.location.href = "/";
   };
 

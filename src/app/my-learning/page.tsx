@@ -22,10 +22,10 @@ export default function MyLearningPage() {
 
   const loadUserEvents = async (phone: string) => {
     setLoading(true);
-    const cleanPhone = phone.replace(/\D/g, '');
     let allEvents: any = {};
     
     try {
+      const cleanPhone = (phone || "").replace(/\D/g, '');
       if (isMockMode) {
         const res = await fetch("/api/mockdb");
         const data = await res.json();
@@ -52,7 +52,10 @@ export default function MyLearningPage() {
               const myChaps: { ch: number, completed: boolean }[] = [];
               Object.entries(tractateObj.chapters).forEach(([chIndex, chapterObj]: any) => {
                 const takerPhone = (chapterObj.takerPhone || "").replace(/\D/g, '');
-                if (takerPhone === cleanPhone || (chapterObj.takerName === profile?.name && takerPhone === cleanPhone)) {
+                const hasPhoneMatch = cleanPhone && takerPhone === cleanPhone;
+                const hasNameMatch = profile?.name && chapterObj.takerName === profile.name;
+                
+                if (hasPhoneMatch || (hasNameMatch && hasPhoneMatch)) {
                   myChaps.push({
                     ch: parseInt(chIndex, 10),
                     completed: !!chapterObj.isCompleted
@@ -76,7 +79,7 @@ export default function MyLearningPage() {
         let isOrganizer = false;
         if (profile?.name && ev.organizerName && profile.name.trim() === ev.organizerName.trim()) {
           isOrganizer = true;
-        } else if (ev.organizerPhone && ev.organizerPhone.replace(/\D/g, '') === cleanPhone) {
+        } else if (cleanPhone && ev.organizerPhone && ev.organizerPhone.replace(/\D/g, '') === cleanPhone) {
           isOrganizer = true;
         }
 
@@ -134,9 +137,15 @@ export default function MyLearningPage() {
   useEffect(() => {
     const profileStr = localStorage.getItem("participantProfile");
     if (profileStr) {
-      const p = JSON.parse(profileStr);
-      setProfile(p);
-      loadUserEvents(p.phone);
+      try {
+        const p = JSON.parse(profileStr);
+        setProfile(p);
+        loadUserEvents(p?.phone || "");
+      } catch (e) {
+        console.error("Failed to parse participantProfile", e);
+        localStorage.removeItem("participantProfile");
+        setLoading(false);
+      }
     } else {
       setLoading(false);
     }

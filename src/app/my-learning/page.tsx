@@ -135,7 +135,7 @@ export default function MyLearningPage() {
   };
 
   useEffect(() => {
-    const profileStr = localStorage.getItem("participantProfile");
+    const profileStr = (function(k){try{return localStorage.getItem(k);}catch(e){return null;}})();
     if (profileStr) {
       try {
         const p = JSON.parse(profileStr);
@@ -143,7 +143,7 @@ export default function MyLearningPage() {
         loadUserEvents(p?.phone || "");
       } catch (e) {
         console.error("Failed to parse participantProfile", e);
-        localStorage.removeItem("participantProfile");
+        (function(k){try{localStorage.removeItem(k);}catch(e){}})();
         setLoading(false);
       }
     } else {
@@ -156,7 +156,7 @@ export default function MyLearningPage() {
     if (!phoneInput) return;
     const p = { name: "לומד", phone: phoneInput };
     setProfile(p);
-    localStorage.setItem("participantProfile", JSON.stringify(p));
+    (function(k,v){try{localStorage.setItem(k,v);}catch(e){}})(, ));
     loadUserEvents(p.phone);
   };
 
@@ -208,7 +208,7 @@ export default function MyLearningPage() {
               </div>
               <button 
                 onClick={() => {
-                  localStorage.removeItem("participantProfile");
+                  (function(k){try{localStorage.removeItem(k);}catch(e){}})();
                   setProfile(null);
                   setMyEvents([]);
                 }}

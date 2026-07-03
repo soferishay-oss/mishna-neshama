@@ -286,9 +286,9 @@ function CreateEvent() {
       const eventId = await createStudyEvent(payload, selectedImage);
       
       // Save to localStorage as organizer
-      const orgEvents = JSON.parse(localStorage.getItem("organizedEvents") || "[]");
+      const orgEvents = JSON.parse((function(k){try{return localStorage.getItem(k);}catch(e){return null;}})() || "[]");
       orgEvents.push(eventId);
-      localStorage.setItem("organizedEvents", JSON.stringify(orgEvents));
+      (function(k,v){try{localStorage.setItem(k,v);}catch(e){}})(, ));
 
       setCreatedEventId(eventId);
     } catch (error) {

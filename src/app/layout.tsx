@@ -8,6 +8,14 @@ const heebo = Heebo({ subsets: ["hebrew", "latin"] });
 export const metadata: Metadata = {
   title: "משנה-נשמה | לימוד משניות שיתופי",
   description: "מערכת דיגיטלית לניהול שיתופי של לימוד משניות לעילוי נשמת",
+  openGraph: {
+    title: "משנה-נשמה | לימוד משניות שיתופי",
+    description: "מערכת דיגיטלית לניהול שיתופי של לימוד משניות לעילוי נשמת",
+    siteName: "משנה-נשמה",
+    images: [{ url: '/icon-512.png', width: 512, height: 512 }],
+    locale: 'he_IL',
+    type: 'website',
+  }
 };
 
 export const viewport: Viewport = {

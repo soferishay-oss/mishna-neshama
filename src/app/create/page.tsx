@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Camera, ChevronRight, Loader2 } from "lucide-react";
+import { Camera, ChevronRight, Loader2, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { HDate, gematriya } from "@hebcal/core";
 import { createStudyEvent, updateEventImage } from "@/lib/events";
@@ -88,6 +88,7 @@ function CreateEvent() {
   const [targetType, setTargetType] = useState<"shloshim" | "yahrzeit" | "custom">("shloshim");
   const [yahrzeitYear, setYahrzeitYear] = useState<number>(currentYear);
   const [customTargetDate, setCustomTargetDate] = useState({ day: 1, month: "Tishrei", year: currentYear });
+  const [createdEventId, setCreatedEventId] = useState<string | null>(null);
   const [previousEventId, setPreviousEventId] = useState<string>("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -284,7 +285,7 @@ function CreateEvent() {
       orgEvents.push(eventId);
       localStorage.setItem("organizedEvents", JSON.stringify(orgEvents));
 
-      router.push(`/event/${eventId}`);
+      setCreatedEventId(eventId);
     } catch (error) {
       console.error("Error creating/editing event", error);
       alert("שגיאה, אנא נסה שנית.");
@@ -293,6 +294,45 @@ function CreateEvent() {
   };
 
   const years = Array.from({ length: 23 }, (_, i) => currentYear - 2 + i);
+
+  if (createdEventId) {
+    let url = "";
+    if (typeof window !== "undefined") {
+      url = `${window.location.origin}/event/${createdEventId}`;
+    }
+    const text = encodeURIComponent(`שלום, פתחת אירוע ב'משנה-נשמה'.\nזה הקישור האישי שלך לניהול האירוע (שמור אותו!):\n${url}`);
+    
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-200 max-w-sm w-full text-center space-y-6">
+          <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-8 h-8" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800">האירוע נוצר בהצלחה!</h2>
+          <p className="text-slate-600 text-sm">
+            כדי שלא תאבד את הגישה לניהול האירוע בעתיד, מומלץ לשמור את הקישור אצלך.
+          </p>
+          <div className="flex flex-col gap-3 mt-4">
+            <a 
+              href={`https://wa.me/?text=${text}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white py-4 rounded-xl transition font-bold shadow-md flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="w-5 h-5" />
+              שמור קישור בוואצפ
+            </a>
+            <button 
+              onClick={() => router.push(`/event/${createdEventId}`)}
+              className="w-full bg-slate-100 text-slate-700 hover:bg-slate-200 py-4 rounded-xl transition font-bold"
+            >
+              המשך לאירוע
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // HebrewDateSelector moved outside
 
@@ -580,6 +620,10 @@ function CreateEvent() {
           </button>
         </form>
       </main>
+      
+      <footer className="mt-8 text-slate-400 text-sm text-center px-4 max-w-lg mx-auto pb-4">
+        <p className="text-xs opacity-70">מספרי הטלפון והשמות נשמרים במערכת באופן מאובטח, משמשים אך ורק לצורך תזכורות הלימוד, ולא יועברו לעולם לשום צד שלישי.</p>
+      </footer>
     </div>
   );
 }

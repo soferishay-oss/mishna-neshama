@@ -7,7 +7,7 @@ import { db, isMockMode } from "@/lib/firebase";
 import { HDate } from "@hebcal/core";
 import { EventData } from "@/lib/events";
 import { useAuth } from "@/hooks/useAuth";
-import { Calendar, Users, Share2, MessageCircle, BookOpen, CheckCircle2, Trash2, Undo2, X, Link as LinkIcon, Mail, Copy, ListTree, PlayCircle, Info, Settings, Menu, Home, PlusCircle, Settings2, Briefcase, ChevronDown, Download, ImageIcon, Trophy, Flame, Printer } from "lucide-react";
+import { Calendar, Users, Share2, MessageCircle, BookOpen, CheckCircle2, Trash2, Undo2, X, Link as LinkIcon, Mail, Copy, ListTree, PlayCircle, Info, Settings, Menu, Home, PlusCircle, Settings2, Briefcase, ChevronDown, Download, ImageIcon, Trophy, Flame, Printer, HelpCircle } from "lucide-react";
 import QRCode from "react-qr-code";
 import { SEDARIM, TRACTATE_CHAPTERS, getHebrewChapter } from "@/lib/tractates";
 import Link from "next/link";
@@ -34,7 +34,7 @@ export default function EventPage() {
   const [loading, setLoading] = useState(true);
   
   const [isOrganizerRole, setIsOrganizerRole] = useState(false);
-  const [activeView, setActiveView] = useState<'learning' | 'additions' | 'notice' | 'organizer' | 'settings' | 'about'>('learning');
+  const [activeView, setActiveView] = useState<'learning' | 'additions' | 'notice' | 'organizer' | 'settings' | 'about' | 'guide'>('learning');
   const [showSidebar, setShowSidebar] = useState(false);
   const [systemTexts, setSystemTexts] = useState<any>(DEFAULT_SYSTEM_TEXTS);
   
@@ -69,76 +69,8 @@ export default function EventPage() {
   const [showNewLearnerForm, setShowNewLearnerForm] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
-"use client";
 
-import React, { useEffect, useState, Fragment } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { ref, onValue, update, remove, get } from "firebase/database";
-import { db, isMockMode } from "@/lib/firebase";
-import { HDate } from "@hebcal/core";
-import { EventData } from "@/lib/events";
-import { useAuth } from "@/hooks/useAuth";
-import { Calendar, Users, Share2, MessageCircle, BookOpen, CheckCircle2, Trash2, Undo2, X, Link as LinkIcon, Mail, Copy, ListTree, PlayCircle, Info, Settings, Menu, Home, PlusCircle, Settings2, Briefcase, ChevronDown, Download, ImageIcon, Trophy, Flame, Printer } from "lucide-react";
-import QRCode from "react-qr-code";
-import { SEDARIM, TRACTATE_CHAPTERS, getHebrewChapter } from "@/lib/tractates";
-import Link from "next/link";
-import AdditionsHub from "@/components/AdditionsHub";
-import NoticeHub from "@/components/NoticeHub";
-import DailyLearningModal from "@/components/DailyLearningModal";
-import CalendarModal from "@/components/CalendarModal";
-import { downloadCSV } from "@/lib/exportUtils";
-import { generateCompletionPoster } from "@/lib/posterGenerator";
-import { DEFAULT_SYSTEM_TEXTS } from "@/lib/defaultTexts";
 
-function getInitials(name: string) {
-  if (!name) return "";
-  return name.split(' ').map(n => n[0]).join('. ') + '.';
-}
-
-export default function EventPage() {
-  const { id } = useParams();
-  const router = useRouter();
-  const { user } = useAuth();
-  
-  const [event, setEvent] = useState<EventData | null>(null);
-  const [tractatesData, setTractatesData] = useState<Record<string, any>>({});
-  const [loading, setLoading] = useState(true);
-  
-  const [isOrganizerRole, setIsOrganizerRole] = useState(false);
-  const [activeView, setActiveView] = useState<'learning' | 'additions' | 'notice' | 'organizer' | 'settings' | 'about'>('learning');
-  const [showSidebar, setShowSidebar] = useState(false);
-  const [systemTexts, setSystemTexts] = useState<any>(DEFAULT_SYSTEM_TEXTS);
-  
-  const [showJoinForm, setShowJoinForm] = useState(false);
-  const [joinName, setJoinName] = useState("");
-  const [joinPhone, setJoinPhone] = useState("");
-  const [joinEmail, setJoinEmail] = useState("");
-  const [participantProfile, setParticipantProfile] = useState<any>(null);
-
-  // Admin login state
-  const [showAdminLogin, setShowAdminLogin] = useState(false);
-  const [adminPasswordInput, setAdminPasswordInput] = useState("");
-  const [adminLoginError, setAdminLoginError] = useState(false);
-  
-  const [selectedTractateForCalendar, setSelectedTractateForCalendar] = useState<string | null>(null);
-  const [selectedTractateForDaily, setSelectedTractateForDaily] = useState<string | null>(null);
-  const [selectedTractateTotalChapters, setSelectedTractateTotalChapters] = useState(0);
-
-  const [manualAssignName, setManualAssignName] = useState("");
-  const [quickAssignNames, setQuickAssignNames] = useState<Record<string, string>>({});
-  
-  const checkIsOrganizer = (profile: any, eventData: any) => {
-    if (!profile || !eventData) return false;
-    let matches = 0;
-    if (profile.name && eventData.organizerName && profile.name.trim() === eventData.organizerName.trim()) matches++;
-    if (profile.phone && eventData.organizerPhone && profile.phone.trim() === eventData.organizerPhone.trim()) matches++;
-    if (profile.email && eventData.organizerEmail && profile.email.trim() === eventData.organizerEmail.trim()) matches++;
-    return matches >= 2;
-  };
-
-  const [knownProfiles, setKnownProfiles] = useState<any[]>([]);
-  const [showNewLearnerForm, setShowNewLearnerForm] = useState(false);
-  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
   const [selectedTractate, setSelectedTractate] = useState<string | null>(null);
   const [showChaptersModal, setShowChaptersModal] = useState(false);
@@ -1505,6 +1437,9 @@ export default function EventPage() {
                 <button onClick={() => handleSetView('about')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeView === 'about' ? 'bg-blue-100 text-blue-700' : 'text-slate-700 hover:bg-slate-50'}`}>
                   <Info className="w-5 h-5" /> אודות
                 </button>
+                <button onClick={() => handleSetView('guide')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeView === 'guide' ? 'bg-blue-100 text-blue-700' : 'text-slate-700 hover:bg-slate-50'}`}>
+                  <HelpCircle className="w-5 h-5" /> הוראות שימוש
+                </button>
                 
                 <div className="my-4 border-t border-slate-100"></div>
                 <div className="px-4 mb-2 text-xs font-bold text-slate-400 uppercase tracking-wider">אזור מארגן</div>
@@ -1548,6 +1483,38 @@ export default function EventPage() {
           <h2 className="text-2xl font-bold text-slate-800 mb-4">אודות המערכת</h2>
           <div className="text-slate-600 leading-relaxed whitespace-pre-wrap">
             {systemTexts?.aboutUs || DEFAULT_SYSTEM_TEXTS.aboutUs}
+          </div>
+        </div>
+      ) : activeView === 'guide' ? (
+        <div className="max-w-4xl mx-auto p-6 mt-8 bg-white rounded-3xl shadow-sm">
+          <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+            <HelpCircle className="w-6 h-6 text-blue-600" /> הוראות שימוש
+          </h2>
+          <div className="text-slate-700 leading-relaxed space-y-6">
+            {(systemTexts?.guide || DEFAULT_SYSTEM_TEXTS.guide || '').split('\n').map((line: string, i: number) => {
+              if (line.trim() === '') return <br key={i} />;
+              
+              let parsedLine = line;
+              // Simple parser for [icon-...] syntax
+              const iconMap: Record<string, JSX.Element> = {
+                '[icon-book-open]': <BookOpen className="inline w-5 h-5 text-blue-500 mx-1" />,
+                '[icon-check-circle-2]': <CheckCircle2 className="inline w-5 h-5 text-green-500 mx-1" />,
+                '[icon-list-tree]': <ListTree className="inline w-5 h-5 text-slate-500 mx-1" />,
+                '[icon-calendar]': <Calendar className="inline w-5 h-5 text-purple-500 mx-1" />,
+                '[icon-info]': <Info className="inline w-5 h-5 text-amber-500 mx-1" />,
+                '[icon-share-2]': <Share2 className="inline w-5 h-5 text-indigo-500 mx-1" />
+              };
+              
+              const parts = parsedLine.split(/(\[icon-[a-zA-Z0-9-]+\])/);
+              
+              return (
+                <div key={i} className={`${line.startsWith('[icon-') ? 'font-bold text-lg text-blue-900 mt-6 border-b pb-2' : ''}`}>
+                  {parts.map((part, j) => 
+                    iconMap[part] ? <React.Fragment key={j}>{iconMap[part]}</React.Fragment> : <span key={j}>{part}</span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       ) : (
@@ -1750,8 +1717,7 @@ export default function EventPage() {
                   <div>
                     <h4 className="font-bold text-blue-900 text-lg mb-1">למדת באירוע הקודם!</h4>
                     <p className="text-sm text-blue-800 leading-relaxed">
-                      בפעם הקודמת למדת את: <span className="font-bold bg-blue-100 px-2 py-0.5 rounded-md mx-1">{learnedLastYear.join(", ")}</span><br/>
-                      נשמח מאוד אם תזכה גם הפעם לקחת את אותן המסכתות להצלחת ועליית נשמת הנפטר/ת.
+                      בפעם הקודמת למדת את: <span className="font-bold bg-blue-100 px-2 py-0.5 rounded-md mx-1">{learnedLastYear.join(", ")}</span>
                     </p>
                   </div>
                 </div>
@@ -2085,6 +2051,10 @@ export default function EventPage() {
           </div>
         </div>
       )}
+
+      <footer className="mt-16 text-slate-400 text-sm text-center px-4 pb-8 max-w-2xl mx-auto">
+        <p className="text-xs opacity-70">מספרי הטלפון והשמות נשמרים במערכת באופן מאובטח, משמשים אך ורק לצורך תזכורות הלימוד, ולא יועברו לעולם לשום צד שלישי.</p>
+      </footer>
 
       {selectedTractateForCalendar && event && (
         <CalendarModal 

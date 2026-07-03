@@ -644,6 +644,16 @@ export default function AdminPage() {
             </div>
 
             <div className="mt-8 pt-6 border-t border-slate-100">
+              <label className="block text-sm font-bold text-slate-600 mb-2">טקסט 'הוראות שימוש' (מדריך למשתמש)</label>
+              <textarea 
+                className="w-full border rounded-xl p-3 min-h-[250px] font-sans" 
+                value={systemTexts.guide || DEFAULT_SYSTEM_TEXTS.guide || ''} 
+                onChange={e => setSystemTexts({...systemTexts, guide: e.target.value})} 
+              />
+              <p className="text-xs text-slate-400 mt-1">תוכלו להשתמש בתגיות אייקון כגון [icon-book-open], [icon-check-circle-2] וכדומה. לחלוקת נושאים, מומלץ להשתמש בראשי פרקים ושורות ריקות.</p>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-slate-100">
               <h4 className="font-bold text-slate-700 mb-4">תבניות הודעות שיתוף בווטסאפ</h4>
               <p className="text-xs text-slate-500 mb-4">
                 ניתן להשתמש בתגיות הבאות שיוחלפו אוטומטית: <code>{`{event_name}`}</code> (שם הנפטר), <code>{`{participant_name}`}</code> (שם הלומד), <code>{`{link}`}</code> (הקישור עצמו), <code>{`{left}`}</code> (פרקים שנותרו), <code>{`{taken}`}</code> (פרקים שנלקחו), <code>{`{total}`}</code> (סך כל הפרקים), <code>{`{percent}`}</code> (אחוז התקדמות).

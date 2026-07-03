@@ -111,8 +111,9 @@ function HomePageContent() {
             {/* Unified login button removed */}
           </div>
 
-          <footer className="mt-16 text-slate-400 text-sm">
-            פותח על ידי <span className="font-medium text-slate-500">א.ס. פתרונות מחשוב</span>
+          <footer className="mt-16 text-slate-400 text-sm text-center px-4">
+            <p className="mb-2">פותח על ידי <span className="font-medium text-slate-500">א.ס. פתרונות מחשוב</span></p>
+            <p className="text-xs opacity-70">מספרי הטלפון והשמות נשמרים במערכת באופן מאובטח, משמשים אך ורק לצורך תזכורות הלימוד, ולא יועברו לעולם לשום צד שלישי.</p>
           </footer>
         </motion.main>
       )}

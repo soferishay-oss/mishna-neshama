@@ -87,8 +87,11 @@ export default function EventPage() {
   const [customMessage, setCustomMessage] = useState("");
 
   useEffect(() => {
-    let organizedEvents = [];
-    try { organizedEvents = JSON.parse(localStorage.getItem("organizedEvents") || "[]"); } catch(e) {}
+    let organizedEvents: string[] = [];
+    try { 
+      const parsed = JSON.parse(localStorage.getItem("organizedEvents") || "[]"); 
+      if (Array.isArray(parsed)) organizedEvents = parsed;
+    } catch(e) {}
     const createdHere = organizedEvents.includes(id);
     setIsOrganizerRole(createdHere);
 
@@ -103,8 +106,11 @@ export default function EventPage() {
     let profile = null;
     try { profile = profileStr ? JSON.parse(profileStr) : null; } catch(e) { localStorage.removeItem("participantProfile"); }
     
-    let savedProfiles = [];
-    try { savedProfiles = JSON.parse(localStorage.getItem("knownProfiles") || "[]"); } catch(e) {}
+    let savedProfiles: any[] = [];
+    try { 
+      const parsed = JSON.parse(localStorage.getItem("knownProfiles") || "[]"); 
+      if (Array.isArray(parsed)) savedProfiles = parsed;
+    } catch(e) {}
     setKnownProfiles(savedProfiles);
     if (savedProfiles.length === 0) {
       setShowNewLearnerForm(true);
@@ -467,7 +473,10 @@ export default function EventPage() {
     }
     
     let organizedEvents: string[] = [];
-    try { organizedEvents = JSON.parse(localStorage.getItem("organizedEvents") || "[]"); } catch(e) {}
+    try { 
+      const parsed = JSON.parse(localStorage.getItem("organizedEvents") || "[]"); 
+      if (Array.isArray(parsed)) organizedEvents = parsed;
+    } catch(e) {}
     const updatedEvents = organizedEvents.filter((eId: string) => eId !== id);
     localStorage.setItem("organizedEvents", JSON.stringify(updatedEvents));
     

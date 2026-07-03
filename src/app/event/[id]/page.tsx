@@ -87,7 +87,8 @@ export default function EventPage() {
   const [customMessage, setCustomMessage] = useState("");
 
   useEffect(() => {
-    const organizedEvents = JSON.parse(localStorage.getItem("organizedEvents") || "[]");
+    let organizedEvents = [];
+    try { organizedEvents = JSON.parse(localStorage.getItem("organizedEvents") || "[]"); } catch(e) {}
     const createdHere = organizedEvents.includes(id);
     setIsOrganizerRole(createdHere);
 
@@ -99,9 +100,11 @@ export default function EventPage() {
     }
 
     const profileStr = localStorage.getItem("participantProfile");
-    const profile = profileStr ? JSON.parse(profileStr) : null;
+    let profile = null;
+    try { profile = profileStr ? JSON.parse(profileStr) : null; } catch(e) { localStorage.removeItem("participantProfile"); }
     
-    const savedProfiles = JSON.parse(localStorage.getItem("knownProfiles") || "[]");
+    let savedProfiles = [];
+    try { savedProfiles = JSON.parse(localStorage.getItem("knownProfiles") || "[]"); } catch(e) {}
     setKnownProfiles(savedProfiles);
     if (savedProfiles.length === 0) {
       setShowNewLearnerForm(true);
@@ -136,8 +139,12 @@ export default function EventPage() {
           
           const profileStr = localStorage.getItem("participantProfile");
           if (profileStr) {
-            const profile = JSON.parse(profileStr);
-            setIsOrganizerRole(checkIsOrganizer(profile, data));
+            try {
+              const profile = JSON.parse(profileStr);
+              setIsOrganizerRole(checkIsOrganizer(profile, data));
+            } catch (e) {
+              setIsOrganizerRole(createdHere);
+            }
           } else {
             setIsOrganizerRole(createdHere);
           }
@@ -189,13 +196,17 @@ export default function EventPage() {
 
           const profileStr = localStorage.getItem("participantProfile");
           if (profileStr) {
-            const profile = JSON.parse(profileStr);
-            const isNowOrg = checkIsOrganizer(profile, data);
-            setIsOrganizerRole(isNowOrg);
-            if (isNowOrg) {
-              if (!localStorage.getItem(`activeView_${id}`)) {
-                setActiveView('organizer');
+            try {
+              const profile = JSON.parse(profileStr);
+              const isNowOrg = checkIsOrganizer(profile, data);
+              setIsOrganizerRole(isNowOrg);
+              if (isNowOrg) {
+                if (!localStorage.getItem(`activeView_${id}`)) {
+                  setActiveView('organizer');
+                }
               }
+            } catch (e) {
+              setIsOrganizerRole(createdHere);
             }
           } else {
              setIsOrganizerRole(createdHere);
@@ -455,7 +466,8 @@ export default function EventPage() {
       });
     }
     
-    const organizedEvents = JSON.parse(localStorage.getItem("organizedEvents") || "[]");
+    let organizedEvents: string[] = [];
+    try { organizedEvents = JSON.parse(localStorage.getItem("organizedEvents") || "[]"); } catch(e) {}
     const updatedEvents = organizedEvents.filter((eId: string) => eId !== id);
     localStorage.setItem("organizedEvents", JSON.stringify(updatedEvents));
     

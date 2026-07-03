@@ -1062,6 +1062,37 @@ export default function EventPage() {
     });
   }
 
+  const pastParticipantsToInvite: Array<{name: string, phone: string, tractates: string[]}> = [];
+  if (activeView === 'organizer' && pastEvents.length > 0) {
+     const past = new Map<string, {name: string, phone: string, tractates: string[]}>();
+     pastEvents.forEach(pe => {
+        if (pe.tractates) {
+          Object.keys(pe.tractates).forEach(tName => {
+            const chaps = pe.tractates[tName]?.chapters || {};
+            Object.values(chaps).forEach((c: any) => {
+              if (c.takerPhone && c.takerName) {
+                if (!past.has(c.takerPhone)) {
+                   past.set(c.takerPhone, { name: c.takerName, phone: c.takerPhone, tractates: [tName] });
+                } else {
+                   const p = past.get(c.takerPhone)!;
+                   if (!p.tractates.includes(tName)) p.tractates.push(tName);
+                }
+              }
+            });
+          });
+        }
+     });
+     
+     const currentPhones = new Set<string>();
+     Object.values(takersMapGlobal).forEach(t => currentPhones.add(t.phone));
+     
+     Array.from(past.values()).forEach(p => {
+        if (!currentPhones.has(p.phone)) {
+           pastParticipantsToInvite.push(p);
+        }
+     });
+  }
+
   const sendLateReminder = (name: string, phone: string) => {
       if (!phone) {
           alert("אין מספר טלפון רשום למשתתף זה.");
@@ -1077,6 +1108,15 @@ export default function EventPage() {
       }
       
       window.open(`https://wa.me/972${cleanPhone.startsWith('0') ? cleanPhone.substring(1) : cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
+  const sendPastInvite = (name: string, phone: string, tractatesList: string[]) => {
+    if (!phone) return;
+    const cleanPhone = phone.replace(/\D/g, '');
+    const title = event?.deceasedTitle ? ` ${event.deceasedTitle}` : ' ז"ל';
+    const deceased = `${event?.deceasedName || ""}${title}`;
+    const text = `שלום ${name},\nבשנה שעברה לקחת על עצמך ללמוד את מסכת ${tractatesList.join(", ")} לעילוי נשמת ${deceased}.\nגם השנה אנו ממשיכים את הלימוד. נשמח אם תוכל/י לקחת מסכת (אפשר את אותה מסכת או מסכת אחרת).\nלכניסה למערכת: ${window.location.href}`;
+    window.open(`https://wa.me/972${cleanPhone.startsWith('0') ? cleanPhone.substring(1) : cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
   const copyGeneralStatus = () => {
@@ -1591,6 +1631,32 @@ export default function EventPage() {
                   <div className="text-center text-sm text-green-600 bg-green-50 p-4 rounded-xl font-bold flex flex-col items-center gap-3">
                     <CheckCircle2 className="w-8 h-8 text-green-500" />
                     כל הלומדים סיימו את חובתם עד כה!
+                  </div>
+                )}
+                
+                {pastParticipantsToInvite.length > 0 && (
+                  <div className="mt-6 border-t pt-4">
+                    <h4 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
+                       <Users className="w-5 h-5 text-indigo-500" />
+                       הזמן לומדים משנים קודמות
+                    </h4>
+                    <p className="text-xs text-slate-500 mb-3">משתתפים אלו למדו בשנים קודמות וטרם הצטרפו השנה:</p>
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                      {pastParticipantsToInvite.map((p, idx) => (
+                        <div key={idx} className="flex items-center justify-between bg-indigo-50 p-3 rounded-lg border border-indigo-100">
+                          <div>
+                            <div className="font-bold text-slate-800">{p.name}</div>
+                            <div className="text-xs text-slate-500">למד/ה בעבר: {p.tractates.join(", ")}</div>
+                          </div>
+                          <button 
+                            onClick={() => sendPastInvite(p.name, p.phone, p.tractates)}
+                            className="bg-indigo-500 text-white px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-indigo-600 transition"
+                          >
+                            שלח הזמנה
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

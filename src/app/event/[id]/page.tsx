@@ -157,8 +157,13 @@ export default function EventPage() {
 
           let currentEventData = data;
           let history = [];
-          while (currentEventData?.previousEventId) {
-            const prevData = allData?.events?.[currentEventData.previousEventId];
+          const visitedIds1 = new Set<string>();
+          visitedIds1.add(id);
+
+          while (currentEventData?.previousEventId && !visitedIds1.has(currentEventData.previousEventId)) {
+            const nextId = currentEventData.previousEventId;
+            visitedIds1.add(nextId);
+            const prevData = allData?.events?.[nextId];
             if (prevData) {
                currentEventData = prevData;
                history.push(currentEventData);
@@ -220,8 +225,13 @@ export default function EventPage() {
 
           let currentEventData = data;
           let history = [];
-          while (currentEventData?.previousEventId) {
-            const snap2 = await get(ref(db, `events/${currentEventData.previousEventId}`));
+          const visitedIds2 = new Set<string>();
+          visitedIds2.add(id);
+
+          while (currentEventData?.previousEventId && !visitedIds2.has(currentEventData.previousEventId)) {
+            const nextId = currentEventData.previousEventId;
+            visitedIds2.add(nextId);
+            const snap2 = await get(ref(db, `events/${nextId}`));
             if (snap2.exists()) {
                currentEventData = snap2.val();
                history.push(currentEventData);

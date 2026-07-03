@@ -564,6 +564,7 @@ export default function AdminPage() {
             <table className="w-full text-sm text-right">
               <thead className="bg-slate-50 text-slate-500 border-b">
                 <tr>
+                  <th className="p-3 font-medium">קוד אירוע</th>
                   <th className="p-3 font-medium">שם הנפטר</th>
                   <th className="p-3 font-medium">תאריך פטירה (לועזי)</th>
                   <th className="p-3 font-medium">שם המארגן</th>
@@ -576,6 +577,7 @@ export default function AdminPage() {
               <tbody>
                 {Object.entries(allEvents).map(([id, ev]: any) => (
                   <tr key={id} className={`border-b border-slate-50 hover:bg-slate-50 ${ev.isArchived ? 'opacity-60 bg-red-50/30' : ''}`}>
+                    <td className="p-3 font-mono text-xs text-slate-500">{id}</td>
                     <td className="p-3 font-bold text-slate-800">
                       {ev.deceasedName} {ev.deceasedTitle || ''}
                       {ev.isArchived && <span className="block text-xs text-red-500 font-bold mt-1">ארכיון (נמחק)</span>}

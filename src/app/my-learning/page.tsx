@@ -72,7 +72,15 @@ export default function MyLearningPage() {
           });
         }
 
-        if (totalChapters > 0) {
+        // Check if user is organizer
+        let isOrganizer = false;
+        if (profile?.name && ev.organizerName && profile.name.trim() === ev.organizerName.trim()) {
+          isOrganizer = true;
+        } else if (ev.organizerPhone && ev.organizerPhone.replace(/\D/g, '') === cleanPhone) {
+          isOrganizer = true;
+        }
+
+        if (totalChapters > 0 || isOrganizer) {
           // Calculate days remaining
           let daysRemaining = -1;
           let computedTargetDateStr = ev.shloshimDateStr;
@@ -93,7 +101,7 @@ export default function MyLearningPage() {
             daysRemaining = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
           }
 
-          const isFullyCompleted = completedChapters === totalChapters;
+          const isFullyCompleted = completedChapters === totalChapters && totalChapters > 0;
           const isPast = daysRemaining < 0;
 
           userEvents.push({
@@ -106,6 +114,7 @@ export default function MyLearningPage() {
             completedChapters,
             isFullyCompleted,
             isPast,
+            isOrganizer,
             // sorting score: active events first, then completed/past
             sortScore: (isFullyCompleted || isPast) ? 100000 + (daysRemaining * -1) : daysRemaining
           });
@@ -259,11 +268,20 @@ export default function MyLearningPage() {
                         </div>
                         
                         <div className="flex items-center gap-4">
-                          <div className="text-left hidden sm:block">
-                            <div className="font-bold text-base" dir="ltr">
-                              <span className={isDone ? 'text-green-600' : 'text-amber-600'}>{ev.completedChapters}</span> 
-                              <span className="text-slate-400"> / {ev.totalChapters}</span>
+                          {ev.isOrganizer && (
+                            <div className="hidden sm:block">
+                              <span className="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-md border border-purple-200">בניהולי</span>
                             </div>
+                          )}
+                          <div className="text-left hidden sm:block">
+                            {ev.totalChapters > 0 ? (
+                              <div className="font-bold text-base" dir="ltr">
+                                <span className={isDone ? 'text-green-600' : 'text-amber-600'}>{ev.completedChapters}</span> 
+                                <span className="text-slate-400"> / {ev.totalChapters}</span>
+                              </div>
+                            ) : (
+                              <div className="text-sm font-bold text-slate-400">לא נלקח לימוד</div>
+                            )}
                           </div>
                           <div className="text-slate-400">
                             {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
@@ -276,51 +294,66 @@ export default function MyLearningPage() {
                         <div className="p-4 bg-slate-50 border-t border-slate-100">
                           <div className="flex justify-between items-center mb-4">
                             <div className="text-sm font-bold text-slate-700">פירוט המסכתות והפרקים:</div>
-                            <Link href={`/event/${ev.id}`} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-blue-700 transition shadow-sm flex items-center gap-1">
-                              כניסה לאירוע <ArrowRight className="w-3 h-3" />
-                            </Link>
+                            <div className="flex gap-2">
+                              {ev.isOrganizer && (
+                                <Link href={`/event/${ev.id}?view=organizer`} className="bg-purple-50 text-purple-700 border border-purple-200 px-4 py-2 rounded-lg font-bold text-xs hover:bg-purple-100 transition shadow-sm flex items-center gap-1">
+                                  ניהול אירוע
+                                </Link>
+                              )}
+                              <Link href={`/event/${ev.id}`} className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-blue-700 transition shadow-sm flex items-center gap-1">
+                                כניסה לאירוע <ArrowRight className="w-3 h-3" />
+                              </Link>
+                            </div>
                           </div>
                           
-                          <div className="space-y-3">
-                            {fullTractates.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                <span className="text-xs font-bold text-slate-500 py-1.5 ml-2">מסכתות שלמות:</span>
-                                {fullTractates.map((t: any, i: number) => {
-                                  const isTractateDone = t.chapters.every((c: any) => c.completed);
-                                  return (
-                                    <div key={i} className={`text-sm px-3 py-1.5 rounded-lg border font-bold ${isTractateDone ? 'bg-green-100 text-green-800 border-green-200' : 'bg-amber-50 text-amber-800 border-amber-200'}`}>
-                                      {t.name}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
+                          {ev.totalChapters > 0 ? (
+                            <>
+                              <div className="space-y-3">
+                                {fullTractates.length > 0 && (
+                                  <div className="flex flex-wrap gap-2">
+                                    <span className="text-xs font-bold text-slate-500 py-1.5 ml-2">מסכתות שלמות:</span>
+                                    {fullTractates.map((t: any, i: number) => {
+                                      const isTractateDone = t.chapters.every((c: any) => c.completed);
+                                      return (
+                                        <div key={i} className={`text-sm px-3 py-1.5 rounded-lg border font-bold ${isTractateDone ? 'bg-green-100 text-green-800 border-green-200' : 'bg-amber-50 text-amber-800 border-amber-200'}`}>
+                                          {t.name}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
 
-                            {partialTractates.length > 0 && (
-                              <div className="flex flex-col gap-2 mt-2">
-                                <span className="text-xs font-bold text-slate-500">פרקים ממסכתות:</span>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                  {partialTractates.map((t: any, i: number) => (
-                                    <div key={i} className="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 text-sm">
-                                      <span className="font-bold text-slate-800 min-w-[70px]">{t.name}:</span>
-                                      <div className="flex flex-wrap gap-1 flex-1">
-                                        {t.chapters.map((c: any, j: number) => (
-                                          <span key={j} className={`px-1.5 py-0.5 rounded text-xs font-medium ${c.completed ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
-                                            {getHebrewChapter(c.ch)}
-                                          </span>
-                                        ))}
-                                      </div>
+                                {partialTractates.length > 0 && (
+                                  <div className="flex flex-col gap-2 mt-2">
+                                    <span className="text-xs font-bold text-slate-500">פרקים ממסכתות:</span>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      {partialTractates.map((t: any, i: number) => (
+                                        <div key={i} className="flex items-center gap-2 bg-white p-2 rounded-lg border border-slate-200 text-sm">
+                                          <span className="font-bold text-slate-800 min-w-[70px]">{t.name}:</span>
+                                          <div className="flex flex-wrap gap-1 flex-1">
+                                            {t.chapters.map((c: any, j: number) => (
+                                              <span key={j} className={`px-1.5 py-0.5 rounded text-xs font-medium ${c.completed ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                {getHebrewChapter(c.ch)}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      ))}
                                     </div>
-                                  ))}
-                                </div>
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                          
-                          {isDone && (
-                            <div className="mt-4 bg-green-100 text-green-800 p-2 rounded-lg flex items-center justify-center gap-2 font-bold text-xs border border-green-200">
-                              <Trophy className="w-4 h-4 text-green-600" />
-                              יישר כוח! סיימת את כל הפרקים שלקחת לעילוי נשמה זו.
+                              
+                              {isDone && (
+                                <div className="mt-4 bg-green-100 text-green-800 p-2 rounded-lg flex items-center justify-center gap-2 font-bold text-xs border border-green-200">
+                                  <Trophy className="w-4 h-4 text-green-600" />
+                                  יישר כוח! סיימת את כל הפרקים שלקחת לעילוי נשמה זו.
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="text-sm text-slate-500 bg-white p-3 rounded-xl border border-slate-200">
+                              לא לקחת פרקים באירוע זה. אתה מוגדר רק כמארגן.
                             </div>
                           )}
                         </div>

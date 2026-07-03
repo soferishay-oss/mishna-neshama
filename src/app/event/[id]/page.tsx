@@ -7,7 +7,7 @@ import { db, isMockMode } from "@/lib/firebase";
 import { HDate } from "@hebcal/core";
 import { EventData } from "@/lib/events";
 import { useAuth } from "@/hooks/useAuth";
-import { Calendar, Users, Share2, MessageCircle, BookOpen, CheckCircle2, Trash2, Undo2, X, Link as LinkIcon, Mail, Copy, ListTree, PlayCircle, Info, Settings, Menu, Home, PlusCircle, Settings2, Briefcase, ChevronDown, Download, ImageIcon, Trophy, Flame, Printer, HelpCircle } from "lucide-react";
+import { Calendar, Users, Share2, MessageCircle, BookOpen, CheckCircle2, Trash2, Undo2, X, Link as LinkIcon, Mail, Copy, ListTree, PlayCircle, Info, Settings, Menu, Home, PlusCircle, Settings2, Briefcase, ChevronDown, Download, ImageIcon, Trophy, Flame, Printer, HelpCircle, User } from "lucide-react";
 import QRCode from "react-qr-code";
 import { SEDARIM, TRACTATE_CHAPTERS, getHebrewChapter } from "@/lib/tractates";
 import Link from "next/link";

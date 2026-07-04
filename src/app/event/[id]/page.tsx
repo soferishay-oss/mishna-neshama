@@ -268,7 +268,17 @@ export default function EventPage() {
            });
            if (userLearned.length > 0) {
                const yearStr = prevEvent.targetDateHebrew || prevEvent.shloshimDateHebrew || "בעבר";
-               userLearnedHistory.push({ yearStr, tractates: userLearned, targetType: prevEvent.targetType || 'yahrzeit' });
+               let tType = prevEvent.targetType;
+               if (!tType) {
+                   if (prevEvent.targetDateStr && prevEvent.shloshimDateStr && prevEvent.targetDateStr === prevEvent.shloshimDateStr) {
+                       tType = 'shloshim';
+                   } else if (!prevEvent.previousEventId) {
+                       tType = 'shloshim';
+                   } else {
+                       tType = 'yahrzeit';
+                   }
+               }
+               userLearnedHistory.push({ yearStr, tractates: userLearned, targetType: tType });
            }
        });
        setLearnedPastYears(userLearnedHistory);
@@ -1823,11 +1833,11 @@ export default function EventPage() {
                     <div className="space-y-1">
                       {learnedPastYears.map((past, idx) => {
                         let prefix = "";
-                        if (past.targetType === 'shloshim') {
-                          prefix = "באזכרת השלושים";
+                        if (past.targetType === 'shloshim' || (!past.targetType && past.yearStr.includes("שלושים"))) {
+                          prefix = "לאזכרת השלושים";
                         } else {
-                          const yearOnly = past.yearStr.split(' ').pop();
-                          prefix = idx === 0 ? `בשנה שעברה (${yearOnly})` : `בשנה שלפני כן (${yearOnly})`;
+                          const yearOnly = past.yearStr.split(' ').pop() || past.yearStr;
+                          prefix = `בשנת ${yearOnly}`;
                         }
                         return (
                           <p key={idx} className="text-sm text-blue-800 leading-relaxed">

@@ -88,7 +88,7 @@ export async function createStudyEvent(data: Omit<EventData, "id" | "shloshimDat
 
   if (isMockMode) {
     const code = await generateUniqueCode();
-    let photoUrl = "";
+    let photoUrl = data.photoUrl || "";
     if (imageFile) {
       photoUrl = await new Promise((resolve) => {
         const reader = new FileReader();
@@ -128,7 +128,7 @@ export async function createStudyEvent(data: Omit<EventData, "id" | "shloshimDat
 
   const code = await generateUniqueCode();
   
-  let photoUrl = "";
+  let photoUrl = data.photoUrl || "";
   if (imageFile) {
     if (isMockMode) {
       photoUrl = await new Promise((resolve) => {

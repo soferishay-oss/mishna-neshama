@@ -79,7 +79,7 @@ export default function EventPage() {
   const [showOrganizerTractateModal, setShowOrganizerTractateModal] = useState<string | null>(null);
 
   const [pastEvents, setPastEvents] = useState<any[]>([]);
-  const [learnedPastYears, setLearnedPastYears] = useState<{yearStr: string, tractates: string[]}[]>([]);
+  const [learnedPastYears, setLearnedPastYears] = useState<{yearStr: string, tractates: string[], targetType: string}[]>([]);
   const learnedLastYear = learnedPastYears.length > 0 ? learnedPastYears[0].tractates : [];
 
   // Modals state
@@ -258,7 +258,7 @@ export default function EventPage() {
 
   useEffect(() => {
     if (pastEvents.length > 0 && participantProfile && participantProfile.phone) {
-       const userLearnedHistory: {yearStr: string, tractates: string[]}[] = [];
+       const userLearnedHistory: {yearStr: string, tractates: string[], targetType: string}[] = [];
        pastEvents.forEach(prevEvent => {
            const userLearned: string[] = [];
            Object.keys(prevEvent.tractates || {}).forEach(tName => {
@@ -268,7 +268,7 @@ export default function EventPage() {
            });
            if (userLearned.length > 0) {
                const yearStr = prevEvent.targetDateHebrew || prevEvent.shloshimDateHebrew || "בעבר";
-               userLearnedHistory.push({ yearStr, tractates: userLearned });
+               userLearnedHistory.push({ yearStr, tractates: userLearned, targetType: prevEvent.targetType || 'yahrzeit' });
            }
        });
        setLearnedPastYears(userLearnedHistory);
@@ -1813,16 +1813,29 @@ export default function EventPage() {
 
         {activeView === 'learning' && (
           <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {learnedLastYear.length > 0 && (
+              {learnedPastYears.length > 0 && (
                 <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl mb-6 shadow-sm flex items-start gap-4 transition-all">
                   <div className="bg-blue-100 p-2 rounded-full text-blue-700 mt-1">
                     <Undo2 className="w-6 h-6" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-blue-900 text-lg mb-1">למדת באירוע הקודם!</h4>
-                    <p className="text-sm text-blue-800 leading-relaxed">
-                      בפעם הקודמת למדת את: <span className="font-bold bg-blue-100 px-2 py-0.5 rounded-md mx-1">{learnedLastYear.join(", ")}</span>
-                    </p>
+                    <h4 className="font-bold text-blue-900 text-lg mb-2">להזכירך -</h4>
+                    <div className="space-y-1">
+                      {learnedPastYears.map((past, idx) => {
+                        let prefix = "";
+                        if (past.targetType === 'shloshim') {
+                          prefix = "באזכרת השלושים";
+                        } else {
+                          const yearOnly = past.yearStr.split(' ').pop();
+                          prefix = idx === 0 ? `בשנה שעברה (${yearOnly})` : `בשנה שלפני כן (${yearOnly})`;
+                        }
+                        return (
+                          <p key={idx} className="text-sm text-blue-800 leading-relaxed">
+                            {prefix} למדת את: <span className="font-bold bg-blue-100 px-2 py-0.5 rounded-md mx-1">{past.tractates.join(", ")}</span>
+                          </p>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               )}

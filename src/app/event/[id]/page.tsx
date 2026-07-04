@@ -1813,7 +1813,7 @@ export default function EventPage() {
 
         {activeView === 'learning' && (
           <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-              {learnedLastYear.length > 0 && !isOrganizerRole && (
+              {learnedLastYear.length > 0 && (
                 <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl mb-6 shadow-sm flex items-start gap-4 transition-all">
                   <div className="bg-blue-100 p-2 rounded-full text-blue-700 mt-1">
                     <Undo2 className="w-6 h-6" />

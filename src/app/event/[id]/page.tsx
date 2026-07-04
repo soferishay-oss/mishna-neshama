@@ -80,6 +80,7 @@ export default function EventPage() {
 
   const [pastEvents, setPastEvents] = useState<any[]>([]);
   const [learnedPastYears, setLearnedPastYears] = useState<{yearStr: string, tractates: string[]}[]>([]);
+  const learnedLastYear = learnedPastYears.length > 0 ? learnedPastYears[0].tractates : [];
 
   // Modals state
   const [showShareModal, setShowShareModal] = useState(false);
@@ -1016,7 +1017,7 @@ export default function EventPage() {
         let nextMishnahLabel = "";
         if (nextChapterToLearn !== null) {
           const bookmarkKey = `bookmark_${id}_${t}_${nextChapterToLearn}`;
-          const savedIndexStr = typeof window !== 'undefined' ? localStorage.getItem(bookmarkKey) : null;
+          const savedIndexStr = (() => { try { return typeof window !== 'undefined' ? localStorage.getItem(bookmarkKey) : null; } catch(e) { return null; } })();
           if (savedIndexStr !== null) {
             const savedIndex = parseInt(savedIndexStr, 10);
             nextMishnahLabel = ` משנה ${getHebrewChapter(savedIndex + 1)}`;

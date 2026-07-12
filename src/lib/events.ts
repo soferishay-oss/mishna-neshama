@@ -195,20 +195,34 @@ export async function checkRecentDuplicateEvent(deceasedName: string, passingDat
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
+  let bestMatch: EventData | null = null;
+  let bestMatchScore = 0;
+
   for (const ev of Object.values(events)) {
-    if (ev.passingDate === passingDate && ev.burialDate === burialDate) {
+    // Only require passingDate to match (burial dates are often omitted or guessed differently)
+    if (ev.passingDate === passingDate) {
       if (ev.createdAt) {
         const evDate = new Date(typeof ev.createdAt === 'number' ? ev.createdAt : ev.createdAt);
         if (evDate >= oneWeekAgo) {
-          const searchNameParts = deceasedName.split(/\s+/);
+          const searchNameParts = deceasedName.split(/\s+/).filter(p => p.length > 1);
           const evName = ev.deceasedName || '';
-          const hasMatch = searchNameParts.some(part => part.length > 2 && evName.includes(part));
-          if (hasMatch || evName === deceasedName) {
-            return ev;
+          
+          let score = 0;
+          if (evName === deceasedName) score = 100;
+          else {
+            const evNameParts = evName.split(/\s+/);
+            for (const part of searchNameParts) {
+              if (part.length > 2 && evName.includes(part)) score += 10;
+            }
+          }
+          
+          if (score > 0 && score > bestMatchScore) {
+            bestMatchScore = score;
+            bestMatch = ev;
           }
         }
       }
     }
   }
-  return null;
+  return bestMatch;
 }

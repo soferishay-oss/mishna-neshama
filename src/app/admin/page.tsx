@@ -6,6 +6,7 @@ import { ref, get, update, remove } from "firebase/database";
 import { DEFAULT_SYSTEM_TEXTS } from "@/lib/defaultTexts";
 import { Lock, Settings, BarChart3, Save, CheckCircle2, LogOut, FileText, ExternalLink, Trash2, PlusCircle, Undo, Download } from "lucide-react";
 import Link from "next/link";
+import { HDate } from "@hebcal/core";
 import { TRACTATE_CHAPTERS } from "@/lib/tractates";
 import { downloadCSV } from "@/lib/exportUtils";
 import dynamic from "next/dynamic";
@@ -181,6 +182,17 @@ export default function AdminPage() {
       setSystemTexts(migrateOldTexts(data.system_texts) || DEFAULT_SYSTEM_TEXTS);
     }
     setLoading(false);
+  };
+
+  const formatHebrewDate = (gregorianDateStr: string) => {
+    if (!gregorianDateStr) return "-";
+    try {
+      const d = new Date(gregorianDateStr + "T12:00:00Z");
+      const hdate = new HDate(d);
+      return hdate.renderGematriya(true);
+    } catch {
+      return gregorianDateStr;
+    }
   };
 
   const calculateStats = (eventsData: any) => {
@@ -582,7 +594,10 @@ export default function AdminPage() {
                       {ev.deceasedName} {ev.deceasedTitle || ''}
                       {ev.isArchived && <span className="block text-xs text-red-500 font-bold mt-1">ארכיון (נמחק)</span>}
                     </td>
-                    <td className="p-3 text-slate-600">{ev.passingDate || "-"}</td>
+                    <td className="p-3 text-slate-600">
+                      <div className="font-semibold">{formatHebrewDate(ev.passingDate)}</div>
+                      <div className="text-xs text-slate-400 mt-1" dir="ltr">{ev.passingDate || ""}</div>
+                    </td>
                     <td className="p-3 text-slate-600">{ev.organizerName || "-"}</td>
                     <td className="p-3 text-slate-600" dir="ltr">{ev.organizerPhone || "-"}</td>
                     <td className="p-3 text-slate-600">{ev.organizerEmail || "-"}</td>

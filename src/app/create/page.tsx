@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Camera, ChevronRight, Loader2, MessageCircle } from "lucide-react";
+import { Camera, ChevronRight, Loader2, MessageCircle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { HDate, gematriya } from "@hebcal/core";
 import { createStudyEvent, updateEventImage, checkRecentDuplicateEvent } from "@/lib/events";

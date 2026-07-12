@@ -101,9 +101,28 @@ export default function SplashScreen({ onFinish }: { onFinish: () => void }) {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.5 } }}
               transition={{ duration: 1 }}
-              className="absolute mt-32 z-0"
+              className="absolute mt-32 z-0 flex flex-col items-center"
             >
-              <BookOpen className="w-24 h-24 text-blue-200 opacity-60" strokeWidth={1.5} />
+              <BookOpen className="w-24 h-24 text-blue-200 opacity-60 mb-6" strokeWidth={1.5} />
+              
+              <div className="flex items-center text-slate-400 font-medium tracking-wide">
+                <span>טוען נתונים</span>
+                <motion.span
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5, times: [0, 0.5, 1] }}
+                  className="mx-[1px]"
+                >.</motion.span>
+                <motion.span
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5, times: [0, 0.5, 1], delay: 0.2 }}
+                  className="mx-[1px]"
+                >.</motion.span>
+                <motion.span
+                  animate={{ opacity: [0, 1, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5, times: [0, 0.5, 1], delay: 0.4 }}
+                  className="mx-[1px]"
+                >.</motion.span>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

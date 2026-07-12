@@ -181,3 +181,34 @@ export async function updateEventImage(code: string, imageFile: File): Promise<s
   await update(ref(db, `events/${code}`), { photoUrl });
   return photoUrl;
 }
+
+export async function checkRecentDuplicateEvent(deceasedName: string, passingDate: string, burialDate: string): Promise<EventData | null> {
+  let events: Record<string, EventData> = {};
+  if (isMockMode) {
+    const res = await fetch('/api/mockdb');
+    const data = await res.json();
+    events = data.events || {};
+  } else {
+    const snap = await get(ref(db, 'events'));
+    if (snap.exists()) events = snap.val();
+  }
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+  for (const ev of Object.values(events)) {
+    if (ev.passingDate === passingDate && ev.burialDate === burialDate) {
+      if (ev.createdAt) {
+        const evDate = new Date(typeof ev.createdAt === 'number' ? ev.createdAt : ev.createdAt);
+        if (evDate >= oneWeekAgo) {
+          const searchNameParts = deceasedName.split(/\s+/);
+          const evName = ev.deceasedName || '';
+          const hasMatch = searchNameParts.some(part => part.length > 2 && evName.includes(part));
+          if (hasMatch || evName === deceasedName) {
+            return ev;
+          }
+        }
+      }
+    }
+  }
+  return null;
+}

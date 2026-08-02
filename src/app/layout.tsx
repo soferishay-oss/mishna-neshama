@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Heebo } from "next/font/google";
 import InstallPrompt from "@/components/InstallPrompt";
+import AuthProvider from "@/components/AuthProvider";
 import "./globals.css";
 
 const heebo = Heebo({ subsets: ["hebrew", "latin"] });
@@ -30,8 +31,10 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl">
       <body className={`${heebo.className} bg-slate-50 text-slate-900 min-h-screen flex flex-col antialiased`}>
-        {children}
-        <InstallPrompt />
+        <AuthProvider>
+          {children}
+          <InstallPrompt />
+        </AuthProvider>
       </body>
     </html>
   );

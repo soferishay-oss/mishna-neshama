@@ -169,10 +169,9 @@ function HomePageContent() {
                         }
                       }
                     } else {
-                      const snap = await get(ref(db));
+                      const snap = await get(ref(db, 'events'));
                       if (snap.exists()) {
-                        const dbData = snap.val();
-                        const events = dbData.events || {};
+                        const events = snap.val() || {};
                         for (const [id, ev] of Object.entries(events) as any) {
                           if (ev.organizerPhone && ev.organizerPhone.replace(/\D/g, '') === organizerPhone.replace(/\D/g, '')) {
                             foundEventId = id; break;

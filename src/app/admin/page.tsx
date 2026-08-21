@@ -171,15 +171,17 @@ export default function AdminPage() {
        setLoading(false);
        return;
     }
-
-    const rootRef = ref(db);
-    const snapshot = await get(rootRef);
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      const evs = data.events || {};
+    try {
+      const [eventsSnap, sysSnap] = await Promise.all([
+        get(ref(db, "events")),
+        get(ref(db, "system_texts"))
+      ]);
+      const evs = eventsSnap.exists() ? eventsSnap.val() : {};
       setAllEvents(evs);
       calculateStats(evs);
-      setSystemTexts(migrateOldTexts(data.system_texts) || DEFAULT_SYSTEM_TEXTS);
+      setSystemTexts(sysSnap.exists() ? migrateOldTexts(sysSnap.val()) : DEFAULT_SYSTEM_TEXTS);
+    } catch (error) {
+      console.error(error);
     }
     setLoading(false);
   };

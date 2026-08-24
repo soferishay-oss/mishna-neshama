@@ -438,6 +438,34 @@ export default function EventPage() {
     setManualAssignName("");
   };
 
+  const handleReleaseMyChaptersInTractate = async (tractateName: string) => {
+    const myChapterIndices = Array.from({ length: TRACTATE_CHAPTERS[tractateName] }).map((_, i) => i).filter(i => {
+      const isTaken = !!tractatesData[tractateName]?.chapters?.[i];
+      const chap = isTaken ? tractatesData[tractateName].chapters[i] : null;
+      return participantProfile && isTaken && chap?.takerName === participantProfile.name && chap?.takerPhone === participantProfile.phone;
+    });
+    
+    if (myChapterIndices.length === 0) return;
+    if (!confirm(`האם לשחרר את כל ${myChapterIndices.length} הפרקים שלך במסכת ${tractateName}?`)) return;
+
+    const updates: Record<string, any> = {};
+    const deletePromises: Promise<any>[] = [];
+    
+    myChapterIndices.forEach(i => {
+      updates[`events/${id}/tractates/${tractateName}/chapters/${i}`] = null;
+      deletePromises.push(
+        fetch(`/api/mockdb?path=events/${id}/tractates/${tractateName}/chapters/${i}`, { method: 'DELETE' })
+      );
+    });
+
+    if (isMockMode) {
+      await Promise.all(deletePromises);
+      refreshMockData();
+    } else {
+      await update(ref(db), updates);
+    }
+  };
+
   const handleReleaseChapter = async (tractateName: string, chIndex: number) => {
     if (!confirm(`האם ברצונך לבטל את בחירת פרק ${getHebrewChapter(chIndex)} במסכת ${tractateName}?`)) return;
     
@@ -1919,6 +1947,12 @@ export default function EventPage() {
                                 <PlayCircle className="w-4 h-4" /> המשך ללמוד
                               </Link>
                             )}
+                            <button 
+                               onClick={() => handleReleaseMyChaptersInTractate(row.tractate)} 
+                               className="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-600 py-2 rounded-xl text-sm font-bold flex justify-center items-center gap-1 transition border border-amber-100"
+                            >
+                               שחרר מסכת
+                            </button>
                           </div>
                         </div>
                       );
@@ -2037,8 +2071,15 @@ export default function EventPage() {
               <h3 className="text-xl font-bold text-slate-800">מסכת {selectedTractate} - בחירת פרקים</h3>
               <button onClick={() => { setShowChaptersModal(false); setSelectedTractate(null); setManualAssignName(""); }} className="text-slate-400 hover:bg-slate-100 p-1.5 rounded-full"><X className="w-5 h-5" /></button>
             </div>
-            <div className="mb-4">
+            <div className="mb-4 flex justify-between items-center">
                <button onClick={selectAllAvailableChapters} className="text-sm text-blue-600 font-medium hover:underline">בחר את כל הפרקים הפנויים</button>
+               {participantProfile && Array.from({ length: TRACTATE_CHAPTERS[selectedTractate] }).some((_, i) => {
+                  const isTaken = !!tractatesData[selectedTractate]?.chapters?.[i];
+                  const chap = isTaken ? tractatesData[selectedTractate].chapters[i] : null;
+                  return isTaken && chap?.takerName === participantProfile.name && chap?.takerPhone === participantProfile.phone;
+               }) && (
+                 <button onClick={() => handleReleaseMyChaptersInTractate(selectedTractate)} className="text-sm text-amber-600 font-medium hover:underline">שחרר את כל הפרקים שלי</button>
+               )}
             </div>
             <div className="overflow-y-auto flex-1 grid grid-cols-3 gap-2 pb-4">
               {Array.from({ length: TRACTATE_CHAPTERS[selectedTractate] }).map((_, i) => {

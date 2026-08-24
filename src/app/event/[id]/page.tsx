@@ -86,6 +86,7 @@ export default function EventPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [commsTemplate, setCommsTemplate] = useState("general");
   const [customMessage, setCustomMessage] = useState("");
+  const [releasedMessageFor, setReleasedMessageFor] = useState<string | null>(null);
 
   useEffect(() => {
     let organizedEvents: string[] = [];
@@ -442,11 +443,10 @@ export default function EventPage() {
     const myChapterIndices = Array.from({ length: TRACTATE_CHAPTERS[tractateName] }).map((_, i) => i).filter(i => {
       const isTaken = !!tractatesData[tractateName]?.chapters?.[i];
       const chap = isTaken ? tractatesData[tractateName].chapters[i] : null;
-      return participantProfile && isTaken && chap?.takerName === participantProfile.name && chap?.takerPhone === participantProfile.phone;
+      return participantProfile && isTaken && chap?.takerName === participantProfile.name && chap?.takerPhone === participantProfile.phone && !chap?.isCompleted;
     });
     
     if (myChapterIndices.length === 0) return;
-    if (!confirm(`האם לשחרר את כל ${myChapterIndices.length} הפרקים שלך במסכת ${tractateName}?`)) return;
 
     const updates: Record<string, any> = {};
     const deletePromises: Promise<any>[] = [];
@@ -464,6 +464,11 @@ export default function EventPage() {
     } else {
       await update(ref(db), updates);
     }
+    
+    setReleasedMessageFor(tractateName);
+    setTimeout(() => {
+       setReleasedMessageFor(null);
+    }, 4000);
   };
 
   const handleReleaseChapter = async (tractateName: string, chIndex: number) => {
@@ -1938,21 +1943,30 @@ export default function EventPage() {
                             </div>
                           )}
                           
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-col gap-2">
                             {!isAllDone && (
                               <Link 
                                 href={`/study/${id}/${row.tractate}/${row.nextChapterToLearn!}`}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-sm font-bold flex justify-center items-center gap-1 transition shadow-sm"
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-xl text-sm font-bold flex justify-center items-center gap-1 transition shadow-sm"
                               >
                                 <PlayCircle className="w-4 h-4" /> המשך ללמוד
                               </Link>
                             )}
-                            <button 
-                               onClick={() => handleReleaseMyChaptersInTractate(row.tractate)} 
-                               className="flex-1 bg-amber-50 hover:bg-amber-100 text-amber-600 py-2 rounded-xl text-sm font-bold flex justify-center items-center gap-1 transition border border-amber-100"
-                            >
-                               שחרר מסכת
-                            </button>
+                            
+                            {releasedMessageFor === row.tractate ? (
+                              <div className="w-full text-center text-sm font-bold text-green-600 mt-1">
+                                המסכת הוחזרה למאגר
+                              </div>
+                            ) : (
+                              !isAllDone && (
+                                <button 
+                                  onClick={() => handleReleaseMyChaptersInTractate(row.tractate)} 
+                                  className="w-full text-center text-xs text-slate-400 hover:text-slate-600 underline font-medium mt-1 transition"
+                                >
+                                  החזר מסכת למאגר
+                                </button>
+                              )
+                            )}
                           </div>
                         </div>
                       );
@@ -2076,9 +2090,13 @@ export default function EventPage() {
                {participantProfile && Array.from({ length: TRACTATE_CHAPTERS[selectedTractate] }).some((_, i) => {
                   const isTaken = !!tractatesData[selectedTractate]?.chapters?.[i];
                   const chap = isTaken ? tractatesData[selectedTractate].chapters[i] : null;
-                  return isTaken && chap?.takerName === participantProfile.name && chap?.takerPhone === participantProfile.phone;
+                  return isTaken && chap?.takerName === participantProfile.name && chap?.takerPhone === participantProfile.phone && !chap?.isCompleted;
                }) && (
-                 <button onClick={() => handleReleaseMyChaptersInTractate(selectedTractate)} className="text-sm text-amber-600 font-medium hover:underline">שחרר את כל הפרקים שלי</button>
+                 releasedMessageFor === selectedTractate ? (
+                   <span className="text-sm font-bold text-green-600">המסכת הוחזרה למאגר</span>
+                 ) : (
+                   <button onClick={() => handleReleaseMyChaptersInTractate(selectedTractate)} className="text-sm text-amber-600 font-medium hover:underline">החזר מסכת למאגר</button>
+                 )
                )}
             </div>
             <div className="overflow-y-auto flex-1 grid grid-cols-3 gap-2 pb-4">

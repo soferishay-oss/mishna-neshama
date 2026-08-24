@@ -86,7 +86,8 @@ export default function EventPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [commsTemplate, setCommsTemplate] = useState("general");
   const [customMessage, setCustomMessage] = useState("");
-  const [releasedMessageFor, setReleasedMessageFor] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const showToast = (msg: string) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 4000); };
 
   useEffect(() => {
     let organizedEvents: string[] = [];
@@ -465,10 +466,7 @@ export default function EventPage() {
       await update(ref(db), updates);
     }
     
-    setReleasedMessageFor(tractateName);
-    setTimeout(() => {
-       setReleasedMessageFor(null);
-    }, 4000);
+    showToast("המסכת הוחזרה למאגר");
   };
 
   const handleReleaseChapter = async (tractateName: string, chIndex: number) => {
@@ -1953,19 +1951,13 @@ export default function EventPage() {
                               </Link>
                             )}
                             
-                            {releasedMessageFor === row.tractate ? (
-                              <div className="w-full text-center text-sm font-bold text-green-600 mt-1">
-                                המסכת הוחזרה למאגר
-                              </div>
-                            ) : (
-                              !isAllDone && (
-                                <button 
-                                  onClick={() => handleReleaseMyChaptersInTractate(row.tractate)} 
-                                  className="w-full text-center text-xs text-slate-400 hover:text-slate-600 underline font-medium mt-1 transition"
-                                >
-                                  החזר מסכת למאגר
-                                </button>
-                              )
+                            {!isAllDone && (
+                              <button 
+                                onClick={() => handleReleaseMyChaptersInTractate(row.tractate)} 
+                                className="w-full text-center text-xs text-slate-400 hover:text-slate-600 underline font-medium mt-1 transition"
+                              >
+                                החזר מסכת למאגר
+                              </button>
                             )}
                           </div>
                         </div>
@@ -2092,11 +2084,7 @@ export default function EventPage() {
                   const chap = isTaken ? tractatesData[selectedTractate].chapters[i] : null;
                   return isTaken && chap?.takerName === participantProfile.name && chap?.takerPhone === participantProfile.phone && !chap?.isCompleted;
                }) && (
-                 releasedMessageFor === selectedTractate ? (
-                   <span className="text-sm font-bold text-green-600">המסכת הוחזרה למאגר</span>
-                 ) : (
-                   <button onClick={() => handleReleaseMyChaptersInTractate(selectedTractate)} className="text-sm text-amber-600 font-medium hover:underline">החזר מסכת למאגר</button>
-                 )
+                 <button onClick={() => handleReleaseMyChaptersInTractate(selectedTractate)} className="text-sm text-amber-600 font-medium hover:underline">החזר מסכת למאגר</button>
                )}
             </div>
             <div className="overflow-y-auto flex-1 grid grid-cols-3 gap-2 pb-4">
@@ -2260,6 +2248,11 @@ export default function EventPage() {
           targetDateStr={event?.targetDateStr || event?.shloshimDateStr || event?.yahrzeitDateStr}
           passingDateStr={event?.passingDate}
         />
+      )}
+      {toastMessage && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl font-medium text-sm z-[100] animate-bounce">
+          {toastMessage}
+        </div>
       )}
     </div>
   );

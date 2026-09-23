@@ -154,9 +154,9 @@ export default function NoticeHub({ eventData }: { eventData?: any }) {
             {/* The Notice Poster */}
             <div 
               className={`w-full bg-white flex flex-col items-center text-center justify-center 
-                ${noticeData.orientation === 'portrait' ? 'aspect-[1/1.4] max-w-lg' : 'aspect-[1.4/1] max-w-2xl'}
-                ${noticeData.borderThickness === 'thin' ? 'border-[6px] p-8 print:border-[8px]' : noticeData.borderThickness === 'thick' ? 'border-[24px] p-12 print:border-[30px]' : 'border-[12px] p-10 print:border-[16px]'}
-                border-black print:w-full print:h-full print:max-w-none print:aspect-auto
+                ${noticeData.orientation === 'portrait' ? 'aspect-[1/1.414] max-w-lg' : 'aspect-[1.414/1] max-w-2xl'}
+                ${noticeData.borderThickness === 'thin' ? 'border-[6px] print:border-[8px]' : noticeData.borderThickness === 'thick' ? 'border-[24px] print:border-[30px]' : 'border-[12px] print:border-[16px]'}
+                border-black print:w-full print:h-full print:max-w-none print:aspect-auto ${sizes.containerPad}
               `}
               style={{ fontFamily: noticeData.font, boxShadow: '0 0 15px rgba(0,0,0,0.1)' }}
               id="notice-poster"
@@ -172,71 +172,74 @@ export default function NoticeHub({ eventData }: { eventData?: any }) {
 
               {(() => {
                 const isLandscape = noticeData.orientation === 'landscape';
-                const printSizes = {
-                  topLine1: isLandscape ? "print:text-[1.3rem]" : "print:text-[1.6rem]",
-                  topLine2: isLandscape ? "print:text-[1.1rem]" : "print:text-[1.4rem]",
-                  deceasedName: isLandscape ? "print:text-[3.5rem]" : "print:text-[4.5rem]",
-                  funeralInfo: isLandscape ? "print:text-[1.2rem]" : "print:text-[1.5rem]",
-                  shivaHours: isLandscape ? "print:text-[1.1rem] print:px-4 print:py-2" : "print:text-[1.3rem] print:px-6 print:py-2",
-                  familyNames: isLandscape ? "print:text-[1.3rem]" : "print:text-[1.6rem]",
-                  barcodeTextTitle: isLandscape ? "print:text-base" : "print:text-lg",
-                  barcodeTextSub: isLandscape ? "print:text-xs" : "print:text-sm",
-                  barcodeQr: isLandscape ? "print:w-16 print:h-16" : "print:w-20 print:h-20"
+                const sizes = {
+                  topLine1: isLandscape ? "text-xl md:text-2xl print:text-[1.3rem]" : "text-2xl md:text-3xl lg:text-4xl print:text-[1.6rem]",
+                  topLine2: isLandscape ? "text-lg md:text-xl print:text-[1.1rem]" : "text-xl md:text-2xl lg:text-3xl print:text-[1.4rem]",
+                  deceasedName: isLandscape ? "text-4xl md:text-5xl lg:text-6xl print:text-[3.5rem]" : "text-5xl md:text-6xl lg:text-8xl print:text-[4.5rem]",
+                  funeralInfo: isLandscape ? "text-base md:text-lg print:text-[1.2rem]" : "text-lg md:text-xl lg:text-2xl print:text-[1.5rem]",
+                  shivaHours: isLandscape ? "text-sm md:text-base px-4 py-1 print:text-[1.1rem] print:px-4 print:py-2" : "text-md md:text-lg lg:text-xl px-6 py-2 print:text-[1.3rem] print:px-6 print:py-2",
+                  familyNames: isLandscape ? "text-lg md:text-xl print:text-[1.3rem]" : "text-xl md:text-2xl lg:text-3xl print:text-[1.6rem]",
+                  barcodeTextTitle: isLandscape ? "text-xs print:text-sm" : "text-sm print:text-lg",
+                  barcodeTextSub: isLandscape ? "text-[10px] print:text-xs" : "text-xs print:text-sm",
+                  barcodeQr: isLandscape ? "w-12 h-12 print:w-16 print:h-16" : "w-16 h-16 print:w-20 print:h-20",
+                  gap: isLandscape ? "gap-1 print:gap-2" : "gap-3 print:gap-3",
+                  containerPad: isLandscape ? "p-4 print:p-8" : "p-8 print:p-12",
+                  bottomPadding: isLandscape ? "mt-2 pt-2 border-t-2 print:mt-4 print:pt-4" : "mt-8 pt-6 border-t-2 print:mt-4 print:pt-4"
                 };
                 return (
                   <>
-                    <div className="flex-1 flex flex-col justify-center items-center w-full my-auto gap-3 print:gap-3">
+                    <div className={`flex-1 flex flex-col justify-center items-center w-full my-auto ${sizes.gap}`}>
                       {(noticeData.showTopLine1 || noticeData.showTopLine2) && (
                         <div className="flex flex-col items-center">
-                          {noticeData.showTopLine1 && noticeData.topLine1 && <div className={`text-2xl md:text-3xl lg:text-4xl font-bold mb-1 ${printSizes.topLine1} print:leading-tight`}>{noticeData.topLine1}</div>}
-                          {noticeData.showTopLine2 && noticeData.topLine2 && <div className={`text-xl md:text-2xl lg:text-3xl ${printSizes.topLine2}`}>{noticeData.topLine2}</div>}
+                          {noticeData.showTopLine1 && noticeData.topLine1 && <div className={`font-bold mb-1 ${sizes.topLine1} print:leading-tight`}>{noticeData.topLine1}</div>}
+                          {noticeData.showTopLine2 && noticeData.topLine2 && <div className={`font-medium ${sizes.topLine2}`}>{noticeData.topLine2}</div>}
                         </div>
                       )}
                       
-                      <div className={`text-5xl md:text-6xl lg:text-8xl font-black leading-tight ${printSizes.deceasedName} print:leading-tight`}>
+                      <div className={`font-black leading-tight ${sizes.deceasedName} print:leading-tight`}>
                         {noticeData.deceasedName}
                       </div>
                       
                       {noticeData.showFuneral && (
-                        <div className={`text-lg md:text-xl lg:text-2xl ${printSizes.funeralInfo} print:leading-normal whitespace-pre-wrap font-bold`}>
+                        <div className={`whitespace-pre-wrap font-bold ${sizes.funeralInfo} print:leading-normal`}>
                           ההלוויה {noticeData.funeralText}
                         </div>
                       )}
                       
                       {noticeData.showShiva && (
-                        <div className={`text-lg md:text-xl lg:text-2xl ${printSizes.funeralInfo} print:leading-normal`}>
+                        <div className={`${sizes.funeralInfo} print:leading-normal`}>
                           יושבים שבעה בכתובת:<br/>
                           <span className="font-bold">{noticeData.shivaAddress}</span>
                         </div>
                       )}
                       
                       {noticeData.showShivaHours && (
-                        <div className={`text-md md:text-lg lg:text-xl bg-black text-white px-6 py-2 inline-block ${printSizes.shivaHours}`}>
+                        <div className={`bg-black text-white inline-block ${sizes.shivaHours}`}>
                           שעות ניחומים: {noticeData.shivaHours}
                         </div>
                       )}
 
                       {noticeData.showPrayerTimes && (
-                        <div className={`text-md md:text-lg lg:text-xl font-bold border-2 border-black px-6 py-2 inline-block ${printSizes.shivaHours}`}>
+                        <div className={`font-bold border-2 border-black inline-block ${sizes.shivaHours}`}>
                           {noticeData.prayerTimes}
                         </div>
                       )}
                       
                       {noticeData.showFamilyNames && (
-                        <div className={`text-xl md:text-2xl lg:text-3xl font-bold ${printSizes.familyNames} mt-auto`}>
+                        <div className={`font-bold ${sizes.familyNames} mt-auto`}>
                           המשפחה האבלה: {noticeData.familyNames}
                         </div>
                       )}
                     </div>
                     
                     {noticeData.showBarcode && (
-                      <div className="mt-8 pt-6 border-t-2 border-slate-200 w-full flex justify-between items-center px-4 print:mt-4 print:pt-4 print:border-black shrink-0">
+                      <div className={`border-slate-200 print:border-black w-full flex justify-between items-center px-4 shrink-0 ${sizes.bottomPadding}`}>
                          <div className="text-right">
-                           <div className={`font-bold text-sm mb-1 ${printSizes.barcodeTextTitle}`}>לימוד משניות משותף:</div>
-                           <div className={`text-xs ${printSizes.barcodeTextSub}`}>סרוק את הקוד להצטרפות ללימוד</div>
+                           <div className={`font-bold mb-1 ${sizes.barcodeTextTitle}`}>לימוד משניות משותף:</div>
+                           <div className={`${sizes.barcodeTextSub}`}>סרוק את הקוד להצטרפות ללימוד</div>
                          </div>
-                         <div className="border p-2 print:border-4 print:p-2 bg-white">
-                           <QRCode value={typeof window !== 'undefined' ? window.location.href : ""} size={80} className={printSizes.barcodeQr} />
+                         <div className="border p-1 md:p-2 print:border-4 print:p-2 bg-white flex items-center justify-center">
+                           <QRCode value={typeof window !== 'undefined' ? window.location.href : ""} size={80} className={sizes.barcodeQr} />
                          </div>
                       </div>
                     )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings, Printer } from 'lucide-react';
 import QRCode from 'react-qr-code';
 
@@ -26,6 +26,20 @@ export default function NoticeHub({ eventData }: { eventData?: any }) {
     orientation: "portrait",
     showBarcode: !!eventData?.id
   });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('noticeDraft_' + (eventData?.id || 'new'));
+      if (saved) {
+        setNoticeData(JSON.parse(saved));
+      }
+    } catch(e) {}
+  }, [eventData?.id]);
+
+  useEffect(() => {
+    localStorage.setItem('noticeDraft_' + (eventData?.id || 'new'), JSON.stringify(noticeData));
+  }, [noticeData, eventData?.id]);
+
 
   const handlePrint = () => {
     window.print();

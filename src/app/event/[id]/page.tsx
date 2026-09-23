@@ -1384,9 +1384,9 @@ export default function EventPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20 relative">
-      <div className="print:hidden">
-        <header className="bg-gradient-to-b from-blue-700 to-blue-600 text-white p-6 shadow-md rounded-b-3xl relative overflow-hidden">
+    <div className={`min-h-screen bg-slate-50 pb-20 relative ${activeView === 'notice' ? 'print:bg-white print:min-h-0 print:block' : ''}`}>
+      <div className={activeView === 'notice' ? "print:block" : "print:hidden"}>
+        <header className="bg-gradient-to-b from-blue-700 to-blue-600 text-white p-6 shadow-md rounded-b-3xl relative overflow-hidden print:hidden">
         <div className="relative z-10 flex flex-col items-center">
           {event.photoUrl ? (
             <img src={event.photoUrl} alt="תמונת הנפטר" className="w-20 h-20 rounded-full object-cover border-4 border-white/20 mb-3 shadow-lg" />
@@ -1424,7 +1424,7 @@ export default function EventPage() {
 
       {/* Participant Info Bar */}
       {participantProfile && (
-        <div className="max-w-4xl mx-auto px-4 mt-4 relative z-40">
+        <div className="max-w-4xl mx-auto px-4 mt-4 relative z-40 print:hidden">
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-3 flex items-center justify-between relative">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-sm font-bold text-blue-700 shadow-inner">
@@ -1492,7 +1492,7 @@ export default function EventPage() {
 
       {/* Global Event Completion Banner */}
       {takenCount === 100 && (
-        <div className="max-w-4xl mx-auto px-4 mt-4 relative z-30">
+        <div className="max-w-4xl mx-auto px-4 mt-4 relative z-30 print:hidden">
           <div className="bg-gradient-to-r from-amber-50 to-amber-100 rounded-2xl shadow-sm border border-amber-200 p-6 flex flex-col items-center justify-center text-center text-amber-900">
             <Flame className="w-10 h-10 mb-3 text-amber-600" />
             <h2 className="text-xl font-bold mb-2">אשריך שזכית!</h2>
@@ -1594,7 +1594,7 @@ export default function EventPage() {
       {activeView === 'additions' ? (
         <AdditionsHub eventData={event} systemTexts={systemTexts} />
       ) : activeView === 'notice' ? (
-        <div className="max-w-5xl mx-auto mt-4 h-[calc(100vh-100px)]">
+        <div className="max-w-5xl mx-auto mt-4 h-[calc(100vh-100px)] print:h-auto print:mt-0 print:max-w-none print:w-full print:block">
           <NoticeHub eventData={event} />
         </div>
       ) : activeView === 'about' ? (
@@ -1989,7 +1989,7 @@ export default function EventPage() {
                   </div>
 
                   {/* Printable Table for Organizer */}
-                  <div className="hidden print:block bg-white w-full h-auto font-serif" dir="rtl">
+                  <div className={`hidden ${activeView === 'notice' ? 'print:hidden' : 'print:block'} bg-white w-full h-auto font-serif`} dir="rtl">
                        <style dangerouslySetInnerHTML={{__html: `
                          @media print {
                            @page { size: A4 portrait; margin: 1cm; }

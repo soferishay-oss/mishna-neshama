@@ -150,13 +150,13 @@ export default function NoticeHub({ eventData }: { eventData?: any }) {
           </div>
 
           {/* Preview Panel - Becomes full screen on print */}
-          <div className="lg:col-span-8 bg-slate-200 p-2 md:p-8 rounded-2xl flex items-center justify-center overflow-auto print:bg-white print:p-0">
+          <div className="lg:col-span-8 bg-slate-200 p-2 md:p-8 rounded-2xl flex items-center justify-center overflow-auto print:bg-white print:p-0 print:overflow-visible print:block">
             {/* The Notice Poster */}
             <div 
               className={`w-full bg-white flex flex-col items-center text-center justify-center 
                 ${noticeData.orientation === 'portrait' ? 'aspect-[1/1.4] max-w-lg' : 'aspect-[1.4/1] max-w-2xl'}
                 ${noticeData.borderThickness === 'thin' ? 'border-[6px] p-8 print:border-[8px]' : noticeData.borderThickness === 'thick' ? 'border-[24px] p-12 print:border-[30px]' : 'border-[12px] p-10 print:border-[16px]'}
-                border-black print:fixed print:inset-0 print:w-full print:h-full print:max-w-none print:aspect-auto
+                border-black print:w-full print:h-full print:max-w-none print:aspect-auto
               `}
               style={{ fontFamily: noticeData.font, boxShadow: '0 0 15px rgba(0,0,0,0.1)' }}
               id="notice-poster"
@@ -164,10 +164,9 @@ export default function NoticeHub({ eventData }: { eventData?: any }) {
               {/* Print styling injection */}
               <style dangerouslySetInnerHTML={{__html: `
                 @media print {
-                  @page { size: ${noticeData.orientation}; margin: 1cm; }
-                  body * { visibility: hidden; }
-                  #notice-poster, #notice-poster * { visibility: visible; }
-                  #notice-poster { position: fixed; left: 0; top: 0; width: 100%; height: 100%; box-shadow: none !important; margin: 0; padding: 2cm; box-sizing: border-box; display: flex !important; flex-direction: column !important; justify-content: space-between !important; align-items: center !important; }
+                  @page { size: ${noticeData.orientation}; margin: 0.5cm; }
+                  body { background: white !important; margin: 0 !important; padding: 0 !important; }
+                  #notice-poster { position: relative !important; width: 100% !important; min-height: 95vh !important; box-shadow: none !important; margin: 0 auto !important; padding: 2cm !important; box-sizing: border-box !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; align-items: center !important; }
                 }
               `}} />
 

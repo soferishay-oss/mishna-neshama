@@ -5,7 +5,7 @@ import QRCode from 'react-qr-code';
 export default function NoticeHub({ eventData }: { eventData?: any }) {
   const isFemale = eventData?.deceasedGender === 'female';
   
-  const [noticeData, setNoticeData] = useState({
+  const defaultNoticeData = {
     topLine1: "בצער רב וביגון קודר אנו מודיעים על פטירת",
     showTopLine1: true,
     topLine2: isFemale ? "אמנו / סבתנו / אחותנו / אשתי היקרה" : "אבינו / סבנו / אחינו / בעלי היקר",
@@ -25,16 +25,18 @@ export default function NoticeHub({ eventData }: { eventData?: any }) {
     borderThickness: "medium",
     orientation: "portrait",
     showBarcode: !!eventData?.id
+  };
+  const [noticeData, setNoticeData] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('noticeDraft_' + (eventData?.id || 'new'));
+        if (saved) return JSON.parse(saved);
+      } catch(e) {}
+    }
+    return defaultNoticeData;
   });
 
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('noticeDraft_' + (eventData?.id || 'new'));
-      if (saved) {
-        setNoticeData(JSON.parse(saved));
-      }
-    } catch(e) {}
-  }, [eventData?.id]);
+
 
   useEffect(() => {
     localStorage.setItem('noticeDraft_' + (eventData?.id || 'new'), JSON.stringify(noticeData));
@@ -180,7 +182,22 @@ export default function NoticeHub({ eventData }: { eventData?: any }) {
                 @media print {
                   @page { size: ${noticeData.orientation}; margin: 0.5cm; }
                   body { background: white !important; margin: 0 !important; padding: 0 !important; }
-                  #notice-poster { position: relative !important; width: 100% !important; min-height: 95vh !important; box-shadow: none !important; margin: 0 auto !important; padding: 2cm !important; box-sizing: border-box !important; display: flex !important; flex-direction: column !important; justify-content: space-between !important; align-items: center !important; }
+                  #notice-poster { 
+                     position: relative !important; 
+                     width: ${noticeData.orientation === 'portrait' ? '20cm' : '28.7cm'} !important; 
+                     height: ${noticeData.orientation === 'portrait' ? '28.7cm' : '20cm'} !important; 
+                     max-height: ${noticeData.orientation === 'portrait' ? '28.7cm' : '20cm'} !important;
+                     min-height: ${noticeData.orientation === 'portrait' ? '28.7cm' : '20cm'} !important;
+                     box-shadow: none !important; 
+                     margin: 0 auto !important; 
+                     padding: 1.5cm !important; 
+                     box-sizing: border-box !important; 
+                     display: flex !important; 
+                     flex-direction: column !important; 
+                     justify-content: space-between !important; 
+                     align-items: center !important; 
+                     overflow: hidden !important;
+                  }
                 }
               `}} />
 

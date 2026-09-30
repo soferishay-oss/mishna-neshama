@@ -41,6 +41,33 @@ export default function AdminPage() {
   const categories = systemTexts?.categories || [];
   const [adminActiveCategoryId, setAdminActiveCategoryId] = useState<string>("prayers");
   const activeCategory = categories.find((c: any) => c.id === adminActiveCategoryId) || categories[0] || null;
+async function loadData() {
+    setLoading(true);
+    if (isMockMode) {
+       const res = await fetch("/api/mockdb");
+       const data = await res.json();
+       const evs = data.events || {};
+       setAllEvents(evs);
+       calculateStats(evs);
+       setSystemTexts(migrateOldTexts(data.system_texts) || DEFAULT_SYSTEM_TEXTS);
+       setLoading(false);
+       return;
+    }
+    try {
+      const [eventsSnap, sysSnap] = await Promise.all([
+        get(ref(db, "events")),
+        get(ref(db, "system_texts"))
+      ]);
+      const evs = eventsSnap.exists() ? eventsSnap.val() : {};
+      setAllEvents(evs);
+      calculateStats(evs);
+      setSystemTexts(sysSnap.exists() ? migrateOldTexts(sysSnap.val()) : DEFAULT_SYSTEM_TEXTS);
+    } catch (error) {
+      console.error(error);
+    }
+    setLoading(false);
+  };
+
 
 
   useEffect(() => {
@@ -84,7 +111,7 @@ export default function AdminPage() {
     }
   };
 
-  const migrateOldTexts = (texts: any) => {
+  function migrateOldTexts(texts: any) {
     if (!texts) return texts;
     
     // If it already has categories, return as is
@@ -159,32 +186,7 @@ export default function AdminPage() {
     };
   };
 
-  const loadData = async () => {
-    setLoading(true);
-    if (isMockMode) {
-       const res = await fetch("/api/mockdb");
-       const data = await res.json();
-       const evs = data.events || {};
-       setAllEvents(evs);
-       calculateStats(evs);
-       setSystemTexts(migrateOldTexts(data.system_texts) || DEFAULT_SYSTEM_TEXTS);
-       setLoading(false);
-       return;
-    }
-    try {
-      const [eventsSnap, sysSnap] = await Promise.all([
-        get(ref(db, "events")),
-        get(ref(db, "system_texts"))
-      ]);
-      const evs = eventsSnap.exists() ? eventsSnap.val() : {};
-      setAllEvents(evs);
-      calculateStats(evs);
-      setSystemTexts(sysSnap.exists() ? migrateOldTexts(sysSnap.val()) : DEFAULT_SYSTEM_TEXTS);
-    } catch (error) {
-      console.error(error);
-    }
-    setLoading(false);
-  };
+  
 
   const formatHebrewDate = (gregorianDateStr: string) => {
     if (!gregorianDateStr) return "-";
@@ -197,7 +199,7 @@ export default function AdminPage() {
     }
   };
 
-  const calculateStats = (eventsData: any) => {
+  function calculateStats(eventsData: any) {
     let evCount = Object.keys(eventsData).length;
     let chCount = 0;
     let parts = new Set();

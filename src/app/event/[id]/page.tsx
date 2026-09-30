@@ -12,7 +12,6 @@ import QRCode from "react-qr-code";
 import { SEDARIM, TRACTATE_CHAPTERS, getHebrewChapter } from "@/lib/tractates";
 import Link from "next/link";
 import AdditionsHub from "@/components/AdditionsHub";
-import NoticeHub from "@/components/NoticeHub";
 import DailyLearningModal from "@/components/DailyLearningModal";
 import CalendarModal from "@/components/CalendarModal";
 import { downloadCSV } from "@/lib/exportUtils";
@@ -1547,9 +1546,7 @@ export default function EventPage() {
                 <button onClick={() => handleSetView('additions')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeView === 'additions' ? 'bg-blue-100 text-blue-700' : 'text-slate-700 hover:bg-slate-50'}`}>
                   <Briefcase className="w-5 h-5" /> מאגר תפילות ותוכן
                 </button>
-                <button onClick={() => handleSetView('notice')} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold transition ${activeView === 'notice' ? 'bg-blue-100 text-blue-700' : 'text-slate-700 hover:bg-slate-50'}`}>
-                  <BookOpen className="w-5 h-5" /> עיצוב מודעת אבל
-                </button>
+                
                 <button onClick={() => router.push('/create')} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-slate-700 hover:bg-slate-50 transition">
                   <PlusCircle className="w-5 h-5" /> יצירת אירוע חדש
                 </button>
@@ -1595,7 +1592,7 @@ export default function EventPage() {
         <AdditionsHub eventData={event} systemTexts={systemTexts} />
       ) : activeView === 'notice' ? (
         <div className="max-w-5xl mx-auto mt-4 h-[calc(100vh-100px)] print:h-auto print:mt-0 print:max-w-none print:w-full print:block">
-          <NoticeHub eventData={event} />
+          
         </div>
       ) : activeView === 'about' ? (
         <div className="max-w-4xl mx-auto p-6 mt-8 bg-white rounded-3xl shadow-sm">
@@ -1989,7 +1986,7 @@ export default function EventPage() {
                   </div>
 
                   {/* Printable Table for Organizer */}
-                  <div className={`hidden ${activeView === 'notice' ? 'print:hidden' : 'print:block'} bg-white w-full h-auto font-serif`} dir="rtl">
+                  <div className={`hidden print:block bg-white w-full h-auto font-serif`} dir="rtl">
                        <style dangerouslySetInnerHTML={{__html: `
                          @media print {
                            @page { size: A4 portrait; margin: 1cm; }

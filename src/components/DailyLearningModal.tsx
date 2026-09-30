@@ -13,6 +13,11 @@ interface DailyLearningModalProps {
 export default function DailyLearningModal({ isOpen, onClose, learningRows, targetDateStr, passingDateStr }: DailyLearningModalProps) {
   const [schedule, setSchedule] = useState<{date: string, hebrewDate: string, displayChapters: string[]}[]>([]);
   const [showGregorian, setShowGregorian] = useState(false);
+function getHebrew(num: number) {
+    const letters = ["", "א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "יא", "יב", "יג", "יד", "טו", "טז", "יז", "יח", "יט", "כ", "כא", "כב", "כג", "כד", "כה", "כו", "כז", "כח", "כט", "ל"];
+    return letters[num] || num.toString();
+  };
+
 
   useEffect(() => {
     if (!isOpen) return;
@@ -98,10 +103,7 @@ export default function DailyLearningModal({ isOpen, onClose, learningRows, targ
     setSchedule(newSchedule);
   }, [isOpen, learningRows, targetDateStr, passingDateStr]);
 
-  const getHebrew = (num: number) => {
-    const letters = ["", "א", "ב", "ג", "ד", "ה", "ו", "ז", "ח", "ט", "י", "יא", "יב", "יג", "יד", "טו", "טז", "יז", "יח", "יט", "כ", "כא", "כב", "כג", "כד", "כה", "כו", "כז", "כח", "כט", "ל"];
-    return letters[num] || num.toString();
-  };
+  
 
   if (!isOpen) return null;
 

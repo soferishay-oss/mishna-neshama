@@ -2223,7 +2223,7 @@ export default function EventPage() {
         </div>
       )}
 
-      <footer className="mt-16 text-slate-400 text-sm text-center px-4 pb-8 max-w-2xl mx-auto">
+      <footer className="mt-16 text-slate-400 text-sm text-center px-4 pb-8 max-w-2xl mx-auto print:hidden">
         <p className="text-xs opacity-70">מספרי הטלפון והשמות נשמרים במערכת באופן מאובטח, משמשים אך ורק לצורך תזכורות הלימוד, ולא יועברו לעולם לשום צד שלישי.</p>
       </footer>
 

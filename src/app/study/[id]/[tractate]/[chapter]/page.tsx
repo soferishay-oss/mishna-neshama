@@ -126,7 +126,7 @@ export default function StudyPage() {
         // Fetch Commentaries Concurrently
         const fetchCommentary = async (commentator: string) => {
           try {
-            const res = await fetch(`https://www.sefaria.org/api/texts/${commentator}_on_Mishnah_${sefariaName}.${chapterIndex + 1}?context=0`);
+            const res = await fetch(`https://www.sefaria.org/api/texts/${commentator}_on_Mishnah_${sefariaName}.${chapterIndex + 1}.1-${fetchedText.length}?context=0`);
             const data = await res.json();
             return (data && data.he && data.he.length > 0) ? data.he : [];
           } catch (e) {

@@ -1990,7 +1990,7 @@ export default function EventPage() {
                        <style dangerouslySetInnerHTML={{__html: `
                          @media print {
                            @page { size: A4 portrait; margin: 1cm; }
-                           .print-table-container { position: absolute; left: 0; top: 0; width: 100%; padding: 0; background: white; }
+                           .print-table-container { position: absolute; left: 0; top: 0; width: 100%; padding: 1.5cm; background: white; box-sizing: border-box; }
                          }
                        `}} />
                        <div className="print-table-container max-w-[21cm] mx-auto text-black">

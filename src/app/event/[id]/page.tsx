@@ -1989,12 +1989,12 @@ export default function EventPage() {
                   <div className={`hidden print:block bg-white w-full h-auto font-serif`} dir="rtl">
                        <style dangerouslySetInnerHTML={{__html: `
                          @media print {
-                           @page { size: A4 portrait; margin: 1cm; }
-                           .print-table-container { position: absolute; left: 0; top: 0; width: 100%; padding: 1.5cm; background: white; box-sizing: border-box; }
+                           @page { size: A4 portrait; margin: 0.5cm; }
+                           .print-table-container { position: absolute; left: 0; top: 0; width: 100%; padding: 0cm 0.5cm 0.5cm 0.5cm; background: white; box-sizing: border-box; }
                          }
                        `}} />
                        <div className="print-table-container max-w-[21cm] mx-auto text-black">
-                         <div className="text-center mb-4">
+                         <div className="text-center mb-2">
                            <div className="text-sm mb-1">בס"ד</div>
                            <h2 className="text-2xl font-bold mb-1">לימוד משניות לעילוי נשמת {event?.deceasedName} {event?.deceasedTitle || ''}</h2>
                            <div className="text-lg mb-1">נא לסיים עד תאריך: {event?.targetDateHebrew || event?.shloshimDateHebrew || "___________"}</div>
@@ -2061,7 +2061,7 @@ export default function EventPage() {
                            ))}
                          </div>
 
-                         <div className="mt-4 text-center text-xl font-bold">
+                         <div className="mt-2 text-center text-xl font-bold">
                            תזכו למצוות
                          </div>
                        </div>

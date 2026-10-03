@@ -1989,8 +1989,8 @@ export default function EventPage() {
                   <div className={`hidden print:block bg-white w-full h-auto font-serif`} dir="rtl">
                        <style dangerouslySetInnerHTML={{__html: `
                          @media print {
-                           @page { size: A4 portrait; margin: 0.5cm; }
-                           .print-table-container { position: absolute; left: 0; top: 0; width: 100%; padding: 0cm 0.5cm 0.5cm 0.5cm; background: white; box-sizing: border-box; }
+                           @page { size: A4 portrait; margin: 1cm; }
+                           .print-table-container { position: absolute; left: 0; top: 0; width: 100%; padding: 0.5cm; background: white; box-sizing: border-box; }
                          }
                        `}} />
                        <div className="print-table-container max-w-[21cm] mx-auto text-black">
